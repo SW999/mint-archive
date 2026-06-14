@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1e252e">
+  <title>Каталог монет</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="images/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand__mark" src="images/logo.png" alt="">
+        <div>
+          <h1 class="brand__title">Каталог монет</h1>
+        </div>
+      </div>
+      <div class="header-tools">
+        <div class="currency-panel" aria-label="Курсы валют">
+          <div class="currency-panel__rates">
+            <span>EUR: <strong id="eurRate">—</strong></span>
+            <span>USD: <strong id="usdRate">—</strong></span>
+          </div>
+          <label class="currency-panel__selector">
+            <span>Валюта</span>
+            <select id="currencySelect" class="select-field select-field--compact" aria-label="Валюта отображения">
+              <option value="EUR">EUR €</option>
+              <option value="USD">USD $</option>
+              <option value="BYN">BYN Br</option>
+            </select>
+          </label>
+        </div>
+        <nav class="actions" aria-label="Основные действия">
+          <a class="link-button button--accent" href="form.html">Добавить монету</a>
+        </nav>
+      </div>
+    </header>
+
+    <details class="panel toolbar collapsible-panel" aria-label="Управление базой">
+      <summary class="collapsible-panel__summary">Управление базой</summary>
+      <div class="collapsible-panel__content">
+        <p id="statusMessage" class="notice hidden"></p>
+
+        <div class="toolbar__row">
+          <button id="openFolderButton" class="button button--primary" type="button">Открыть папку каталога</button>
+          <button id="openFileButton" class="button" type="button">Открыть JSON</button>
+          <input id="plainFileInput" class="hidden" type="file" accept="application/json,.json">
+          <button id="saveButton" class="button button--accent" type="button">Сохранить файл</button>
+          <button id="exportButton" class="button" type="button">Экспорт JSON</button>
+          <button id="backupButton" class="button" type="button">Скачать backup</button>
+          <button id="clearButton" class="button button--danger" type="button">Очистить локально</button>
+        </div>
+
+        <div class="data-grid data-grid--compact" aria-label="Информация о базе">
+          <div class="data-item">
+            <span class="data-label">Обновлено</span>
+            <span id="updatedAt" class="data-value">—</span>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details id="statsPanel" class="stats-panel" open aria-label="Статистика">
+      <summary class="stats-panel__summary">Сводка по выборке</summary>
+      <section class="stats">
+        <div class="stat-card">
+          <span id="totalCoins" class="stat-card__value">0</span>
+          <span class="stat-card__label">Монет в выборке</span>
+        </div>
+        <div class="stat-card">
+          <span id="countryCount" class="stat-card__value">0</span>
+          <span class="stat-card__label">Стран</span>
+        </div>
+        <div class="stat-card">
+          <span id="materialCount" class="stat-card__value">0</span>
+          <span class="stat-card__label">Материалов</span>
+        </div>
+      </section>
+    </details>
+
+    <section class="panel toolbar" aria-label="Поиск и фильтры">
+      <div class="filters">
+        <input id="searchInput" class="search-field" type="search" placeholder="Поиск: название, страна, год, каталог..." autocomplete="off">
+        <select id="countryFilter" class="select-field" aria-label="Страна"></select>
+        <select id="statusFilter" class="select-field" aria-label="Статус"></select>
+        <select id="materialFilter" class="select-field" aria-label="Материал"></select>
+        <select id="conditionFilter" class="select-field" aria-label="Состояние"></select>
+      </div>
+      <div class="view-toggle" aria-label="Вид каталога">
+        <button id="cardsViewButton" class="button view-toggle__button" type="button" data-view="cards">Карточки</button>
+        <button id="tableViewButton" class="button view-toggle__button" type="button" data-view="table">Таблица</button>
+      </div>
+    </section>
+
+    <section id="coinList" class="coin-grid" aria-label="Список монет"></section>
+
+    <section class="total-summary" aria-label="Общая сумма">
+      <span>Общая сумма:</span>
+      <strong id="totalAmount">—</strong>
+    </section>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script src="js/file-system.js"></script>
+  <script src="js/currency.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/list.js"></script>
+</body>
+</html>

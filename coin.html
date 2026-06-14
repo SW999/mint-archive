@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1e252e">
+  <title>Монета · Каталог монет</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="images/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand__mark" src="images/logo.png" alt="">
+        <div>
+          <h1 id="detailTitle" class="brand__title">Монета</h1>
+          <p id="detailSubtitle" class="brand__subtitle">—</p>
+        </div>
+      </div>
+      <div class="header-tools">
+        <div class="currency-panel" aria-label="Курсы валют">
+          <div class="currency-panel__rates">
+            <span>EUR: <strong id="eurRate">—</strong></span>
+            <span>USD: <strong id="usdRate">—</strong></span>
+          </div>
+          <label class="currency-panel__selector">
+            <span>Валюта</span>
+            <select id="currencySelect" class="select-field select-field--compact" aria-label="Валюта отображения">
+              <option value="EUR">EUR €</option>
+              <option value="USD">USD $</option>
+              <option value="BYN">BYN Br</option>
+            </select>
+          </label>
+        </div>
+        <nav class="actions" aria-label="Действия">
+          <a class="link-button" href="index.html">В каталог</a>
+          <a id="editButton" class="link-button button--accent" href="form.html">Редактировать</a>
+          <button id="deleteButton" class="button button--danger" type="button">Удалить</button>
+        </nav>
+      </div>
+    </header>
+
+    <p id="statusMessage" class="notice hidden"></p>
+
+    <section class="detail-layout">
+      <aside class="photo-panel" aria-label="Фото монеты">
+        <div>
+          <img id="obverseImage" class="coin-photo" alt="Аверс монеты">
+          <p class="photo-caption">Аверс</p>
+        </div>
+        <div>
+          <img id="reverseImage" class="coin-photo" alt="Реверс монеты">
+          <p class="photo-caption">Реверс</p>
+        </div>
+      </aside>
+
+      <article>
+        <header class="detail-header">
+          <h2 id="detailTitleDuplicate" class="detail-title hidden">Монета</h2>
+          <div id="detailChips" class="coin-card__footer"></div>
+        </header>
+        <div id="detailContent"></div>
+      </article>
+    </section>
+  </main>
+
+  <script src="js/db.js"></script>
+  <script src="js/file-system.js"></script>
+  <script src="js/currency.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/detail.js"></script>
+</body>
+</html>

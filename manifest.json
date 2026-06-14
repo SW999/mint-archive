@@ -1,0 +1,17 @@
+{
+  "name": "Каталог монет",
+  "short_name": "Монеты",
+  "description": "Локальный каталог монет на JSON",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f6f3ed",
+  "theme_color": "#1e252e",
+  "icons": [
+    {
+      "src": "images/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

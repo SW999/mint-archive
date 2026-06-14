@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Фото аверса отсутствует">
+  <rect width="512" height="512" rx="36" fill="#f3efe7"/>
+  <circle cx="256" cy="256" r="142" fill="#ddd2bd" stroke="#bca982" stroke-width="12"/>
+  <circle cx="256" cy="256" r="96" fill="none" stroke="#c7b58f" stroke-width="8" stroke-dasharray="18 14"/>
+  <text x="256" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#7b6b4b">Аверс</text>
+</svg>

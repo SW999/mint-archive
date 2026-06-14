@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Фото реверса отсутствует">
+  <rect width="512" height="512" rx="36" fill="#eef1f4"/>
+  <circle cx="256" cy="256" r="142" fill="#d7dde4" stroke="#a8b2bf" stroke-width="12"/>
+  <path d="M208 254h96M256 206v96" stroke="#7b8794" stroke-width="14" stroke-linecap="round"/>
+  <text x="256" y="358" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#687583">Реверс</text>
+</svg>
