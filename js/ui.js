@@ -78,26 +78,123 @@
     return kind === 'reverse' ? 'images/placeholder-reverse.svg' : 'images/placeholder-obverse.svg';
   }
 
-  async function setCoinImage(image, path, kind) {
-    if (!image) return;
-    const fallback = placeholder(kind);
+  const IMAGE_LOAD_CONCURRENCY = 3;
+  let imageObserver = null;
+  let imageQueue = [];
+  let activeImageLoads = 0;
+  let imageLoadSeq = 0;
+
+  function getImageObserver() {
+    if (!('IntersectionObserver' in window)) return null;
+    if (imageObserver) return imageObserver;
+
+    imageObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        imageObserver.unobserve(entry.target);
+        enqueueImageLoad(entry.target);
+      });
+    }, {
+      root: null,
+      rootMargin: '220px 0px',
+      threshold: 0.01
+    });
+
+    return imageObserver;
+  }
+
+  function setImageFallback(image, fallback) {
     image.onerror = function () {
       image.onerror = null;
       image.src = fallback;
+      image.classList.remove('is-loading');
+      image.classList.add('is-placeholder');
     };
+  }
 
-    if (!path) {
-      image.src = fallback;
-      return;
+  function processImageQueue() {
+    while (activeImageLoads < IMAGE_LOAD_CONCURRENCY && imageQueue.length) {
+      const image = imageQueue.shift();
+      if (!image || !image.isConnected) continue;
+      activeImageLoads += 1;
+      loadQueuedImage(image).finally(function () {
+        activeImageLoads -= 1;
+        processImageQueue();
+      });
     }
+  }
+
+  function enqueueImageLoad(image) {
+    if (!image || image.dataset.imageQueued === 'true') return;
+    image.dataset.imageQueued = 'true';
+    imageQueue.push(image);
+    processImageQueue();
+  }
+
+  async function loadQueuedImage(image) {
+    const path = image.dataset.photoPath || '';
+    const kind = image.dataset.photoKind || 'obverse';
+    const token = image.dataset.imageToken || '';
+    const fallback = placeholder(kind);
+
+    if (!path || !image.isConnected) return;
 
     try {
       const objectUrl = await AppFileSystem.loadImageObjectUrl(path);
+      if (!image.isConnected || image.dataset.imageToken !== token) return;
       image.src = objectUrl || path;
+      image.classList.remove('is-placeholder');
     } catch (error) {
+      if (!image.isConnected || image.dataset.imageToken !== token) return;
       image.src = path || fallback;
+    } finally {
+      if (image.isConnected && image.dataset.imageToken === token) {
+        image.classList.remove('is-loading');
+        image.dataset.imageQueued = 'false';
+      }
     }
   }
+
+  function setCoinImage(image, path, kind, options) {
+    if (!image) return;
+
+    const settings = Object.assign({ lazy: true }, options || {});
+    const fallback = placeholder(kind);
+    const normalizedPath = String(path || '').trim();
+    const token = String(++imageLoadSeq);
+
+    image.loading = settings.lazy ? 'lazy' : 'eager';
+    image.decoding = 'async';
+    image.dataset.imageToken = token;
+    image.dataset.photoPath = normalizedPath;
+    image.dataset.photoKind = kind || 'obverse';
+    image.dataset.imageQueued = 'false';
+    image.classList.add('is-loading');
+    image.classList.add('is-placeholder');
+    setImageFallback(image, fallback);
+    image.src = fallback;
+
+    if (!normalizedPath) {
+      image.classList.remove('is-loading');
+      return;
+    }
+
+    const observer = settings.lazy ? getImageObserver() : null;
+    if (observer) {
+      observer.observe(image);
+    } else {
+      enqueueImageLoad(image);
+    }
+  }
+
+  function cleanupImageObjectUrls() {
+    if (window.AppFileSystem && AppFileSystem.revokeImageObjectUrls) {
+      AppFileSystem.revokeImageObjectUrls();
+    }
+  }
+
+  window.addEventListener('pagehide', cleanupImageObjectUrls);
+
 
   function createElement(tag, className, text) {
     const element = document.createElement(tag);
@@ -269,6 +366,7 @@
     setText: setText,
     setStatus: setStatus,
     setCoinImage: setCoinImage,
+    cleanupImageObjectUrls: cleanupImageObjectUrls,
     createElement: createElement,
     createChip: createChip,
     displayValue: displayValue,

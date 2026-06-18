@@ -5,6 +5,8 @@
   const STORE_NAME = 'handles';
   const FILE_HANDLE_KEY = 'catalogFile';
   const DIRECTORY_HANDLE_KEY = 'catalogDirectory';
+  const imageObjectUrlCache = new Map();
+  const imageObjectUrlPromises = new Map();
 
   function isSupported() {
     return Boolean(window.showOpenFilePicker && window.showSaveFilePicker && window.indexedDB && window.isSecureContext);
@@ -249,19 +251,58 @@
     return null;
   }
 
+  function normalizeImagePath(path) {
+    return String(path || '').trim().replace(/^\/+/, '').replace(/\\/g, '/');
+  }
+
+  function getCachedImageObjectUrl(cacheKey) {
+    const cached = imageObjectUrlCache.get(cacheKey);
+    if (!cached) return null;
+    return cached.url || null;
+  }
+
   async function loadImageObjectUrl(path) {
-    if (!path) return null;
+    const normalizedPath = normalizeImagePath(path);
+    if (!normalizedPath) return null;
+
     const directoryHandle = await getStoredHandle(DIRECTORY_HANDLE_KEY);
     if (!directoryHandle || !(await hasPermission(directoryHandle, 'read'))) return null;
 
     try {
-      const file = await getFileFromDirectoryPath(directoryHandle, path);
+      const file = await getFileFromDirectoryPath(directoryHandle, normalizedPath);
       if (!file) return null;
-      return URL.createObjectURL(file);
+
+      const cacheKey = normalizedPath + '::' + file.size + '::' + file.lastModified;
+      const cachedUrl = getCachedImageObjectUrl(cacheKey);
+      if (cachedUrl) return cachedUrl;
+
+      if (imageObjectUrlPromises.has(cacheKey)) {
+        return imageObjectUrlPromises.get(cacheKey);
+      }
+
+      const promise = Promise.resolve().then(function () {
+        const url = URL.createObjectURL(file);
+        imageObjectUrlCache.set(cacheKey, { url: url, path: normalizedPath });
+        return url;
+      }).finally(function () {
+        imageObjectUrlPromises.delete(cacheKey);
+      });
+
+      imageObjectUrlPromises.set(cacheKey, promise);
+      return promise;
     } catch (error) {
       return null;
     }
   }
+
+  function revokeImageObjectUrls() {
+    imageObjectUrlCache.forEach(function (entry) {
+      if (entry && entry.url) URL.revokeObjectURL(entry.url);
+    });
+    imageObjectUrlCache.clear();
+    imageObjectUrlPromises.clear();
+  }
+
 
   async function loadPlainFileInput(file) {
     const catalog = await parseJsonFile(file);
@@ -280,6 +321,7 @@
     saveCatalog: saveCatalog,
     downloadCatalog: downloadCatalog,
     loadImageObjectUrl: loadImageObjectUrl,
+    revokeImageObjectUrls: revokeImageObjectUrls,
     loadPlainFileInput: loadPlainFileInput,
     clearStoredHandles: clearStoredHandles,
     timestamp: timestamp

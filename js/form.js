@@ -156,7 +156,7 @@
   function updatePreview(field, imageId, kind) {
     const input = document.querySelector('[name="' + field + '"]');
     const image = AppUI.byId(imageId);
-    AppUI.setCoinImage(image, input && input.value, kind);
+    AppUI.setCoinImage(image, input && input.value, kind, { lazy: false });
   }
 
   function getValue(coin, field) {

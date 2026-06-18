@@ -71,8 +71,8 @@
     AppUI.setText(AppUI.byId('detailTitle'), CoinDB.getDisplayTitle(coin));
     AppUI.setText(AppUI.byId('detailSubtitle'), CoinDB.compactText([coin.country, coin.year, coin.mint]));
 
-    AppUI.setCoinImage(AppUI.byId('obverseImage'), coin.photos && coin.photos.obverse, 'obverse');
-    AppUI.setCoinImage(AppUI.byId('reverseImage'), coin.photos && coin.photos.reverse, 'reverse');
+    AppUI.setCoinImage(AppUI.byId('obverseImage'), coin.photos && coin.photos.obverse, 'obverse', { lazy: false });
+    AppUI.setCoinImage(AppUI.byId('reverseImage'), coin.photos && coin.photos.reverse, 'reverse', { lazy: false });
 
     const chips = AppUI.byId('detailChips');
     chips.innerHTML = '';
