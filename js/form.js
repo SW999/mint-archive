@@ -6,6 +6,7 @@
   let draftKey = '';
   let draftTimer = null;
   let isSubmitting = false;
+  let seriesList = [];
 
   document.addEventListener('DOMContentLoaded', init);
 
@@ -14,6 +15,8 @@
 
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
+    const currentCatalog = CoinDB.loadCatalog();
+    seriesList = CoinDB.normalizeSeries(currentCatalog.series);
     originalCoin = id ? CoinDB.getCoinById(id) : null;
     mode = originalCoin ? 'edit' : 'create';
 
@@ -65,7 +68,9 @@
     const grid = AppUI.createElement('div', gridClass);
 
     group.fields.forEach(function (field) {
-      if (field === 'comment') {
+      if (group.type === 'series') {
+        grid.appendChild(createSeriesField(coin));
+      } else if (field === 'comment') {
         grid.appendChild(createTextareaField(field, getValue(coin, field)));
       } else if (field.indexOf('photos.') === 0) {
         grid.appendChild(createPhotoField(field, getValue(coin, field)));
@@ -153,6 +158,89 @@
     return wrapper;
   }
 
+
+  function createSeriesField(coin) {
+    const wrapper = AppUI.createElement('div', 'form-field form-field--wide');
+    wrapper.appendChild(AppUI.createElement('span', 'form-label', 'Серия'));
+
+    const selectedIds = new Set(Array.isArray(coin.seriesIds) ? coin.seriesIds : []);
+    const list = AppUI.createElement('div', 'checkbox-list');
+    list.id = 'seriesCheckboxList';
+
+    renderSeriesCheckboxes(list, selectedIds);
+
+    const addRow = AppUI.createElement('div', 'inline-add');
+    const input = document.createElement('input');
+    input.className = 'field';
+    input.id = 'newSeriesInput';
+    input.type = 'text';
+    input.placeholder = 'Новая серия';
+    input.autocomplete = 'off';
+
+    const button = AppUI.createElement('button', 'button', 'Добавить серию');
+    button.type = 'button';
+    button.addEventListener('click', function () {
+      addSeriesFromInput(input, list);
+    });
+    input.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      addSeriesFromInput(input, list);
+    });
+
+    addRow.appendChild(input);
+    addRow.appendChild(button);
+
+    wrapper.appendChild(list);
+    wrapper.appendChild(addRow);
+    wrapper.appendChild(AppUI.createElement('p', 'small-note', 'Список серий хранится отдельно в JSON, у монеты сохраняются только id выбранных серий.'));
+    return wrapper;
+  }
+
+  function renderSeriesCheckboxes(container, selectedIds) {
+    container.innerHTML = '';
+
+    if (!seriesList.length) {
+      container.appendChild(AppUI.createElement('p', 'small-note', 'Серии пока не добавлены.'));
+      return;
+    }
+
+    seriesList.forEach(function (series) {
+      const label = AppUI.createElement('label', 'checkbox-row');
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.name = 'seriesIds';
+      input.value = series.id;
+      input.checked = selectedIds.has(series.id);
+      label.appendChild(input);
+      label.appendChild(AppUI.createElement('span', '', series.name));
+      container.appendChild(label);
+    });
+  }
+
+  function addSeriesFromInput(input, list) {
+    const name = String(input.value || '').trim();
+    if (!name) return;
+
+    const existing = seriesList.find(function (series) {
+      return series.name.toLowerCase() === name.toLowerCase();
+    });
+
+    const id = existing ? existing.id : CoinDB.generateSeriesId(name);
+    if (!existing) {
+      seriesList.push({ id: id, name: name });
+      seriesList = CoinDB.normalizeSeries(seriesList);
+    }
+
+    input.value = '';
+    const selectedIds = new Set(Array.from(document.querySelectorAll('[name="seriesIds"]:checked')).map(function (node) {
+      return node.value;
+    }));
+    selectedIds.add(id);
+    renderSeriesCheckboxes(list, selectedIds);
+    scheduleDraftSave();
+  }
+
   function updatePreview(field, imageId, kind) {
     const input = document.querySelector('[name="' + field + '"]');
     const image = AppUI.byId(imageId);
@@ -182,6 +270,9 @@
       obverse: String(formData.get('photos.obverse') || '').trim(),
       reverse: String(formData.get('photos.reverse') || '').trim()
     };
+    coin.seriesIds = Array.from(form.querySelectorAll('[name="seriesIds"]:checked')).map(function (input) {
+      return input.value;
+    });
 
     return coin;
   }
@@ -205,6 +296,7 @@
     });
 
     if (confirmed) {
+      if (Array.isArray(draft.series)) seriesList = CoinDB.normalizeSeries(draft.series);
       renderForm(CoinDB.normalizeCoin(draft.coin));
       AppUI.setStatus('Черновик восстановлен из IndexedDB.', 'success');
     } else {
@@ -225,7 +317,8 @@
       await AppDrafts.saveDraft(draftKey, {
         mode: mode,
         coinId: originalCoin && originalCoin.id,
-        coin: readFormCoin()
+        coin: readFormCoin(),
+        series: seriesList
       });
     } catch (error) {
       console.warn('Cannot save form draft', error);
@@ -246,7 +339,7 @@
     try {
       const coin = readFormCoin();
       isSubmitting = true;
-      const catalog = CoinDB.upsertCoin(coin);
+      const catalog = CoinDB.upsertCoin(coin, seriesList);
       const result = await AppUI.persistCatalogOrDownload(catalog);
       await clearDraft();
       AppUI.updateMetaView();

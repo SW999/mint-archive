@@ -2,6 +2,7 @@
   'use strict';
 
   let currentCoin = null;
+  let catalog = null;
 
   document.addEventListener('DOMContentLoaded', init);
 
@@ -10,7 +11,8 @@
 
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    currentCoin = CoinDB.getCoinById(id);
+    catalog = CoinDB.loadCatalog();
+    currentCoin = catalog.coins.find(function (coin) { return String(coin.id) === String(id); }) || null;
 
     if (!currentCoin) {
       renderMissingCoin();
@@ -80,6 +82,9 @@
     if (coin.condition) chips.appendChild(AppUI.createChip(coin.condition, 'accent'));
     if (coin.material) chips.appendChild(AppUI.createChip(coin.material));
     if (coin.currentValue) chips.appendChild(AppUI.createChip('Оценка: ' + AppCurrency.formatPrice(coin.currentValue)));
+    CoinDB.getSeriesByIds(catalog.series, coin.seriesIds).forEach(function (series) {
+      chips.appendChild(AppUI.createChip(series.name));
+    });
 
     renderSections(coin);
   }
@@ -88,7 +93,7 @@
     const content = AppUI.byId('detailContent');
     content.innerHTML = '';
 
-    content.appendChild(createSection('Основное', [
+    appendSection(content, 'Основное', compactRows([
       ['Страна', coin.country],
       ['Номинал', coin.nominal],
       ['Название', coin.title],
@@ -98,7 +103,9 @@
       ['Статус', coin.status]
     ]));
 
-    content.appendChild(createSection('Характеристики', [
+    appendSeriesSection(content, coin);
+
+    appendSection(content, 'Характеристики', compactRows([
       ['Материал', coin.material],
       ['Проба', coin.fineness],
       ['Вес', coin.weight],
@@ -108,26 +115,57 @@
       ['Состояние', coin.condition]
     ]));
 
-    content.appendChild(createSection('Покупка и оценка', [
-      ['Дата приобретения', CoinDB.formatDate(coin.purchaseDate)],
-      ['Цена покупки', formatPriceValue(coin.purchasePrice)],
+    appendSection(content, 'Покупка и оценка', compactRows([
+      ['Дата приобретения', coin.purchaseDate ? CoinDB.formatDate(coin.purchaseDate) : ''],
+      ['Цена покупки', coin.purchasePrice ? formatPriceValue(coin.purchasePrice) : ''],
       ['Источник', coin.source],
-      ['Текущая оценка', formatPriceValue(coin.currentValue)]
+      ['Текущая оценка', coin.currentValue ? formatPriceValue(coin.currentValue) : '']
     ]));
 
-    content.appendChild(createSection('Каталог', [
+    appendSection(content, 'Каталог', compactRows([
       ['Каталожный номер', coin.catalogNumber],
       ['Фото аверса', coin.photos && coin.photos.obverse],
       ['Фото реверса', coin.photos && coin.photos.reverse]
     ]));
 
-    const commentSection = AppUI.createElement('section', 'section');
-    commentSection.appendChild(AppUI.createElement('h2', 'section__title', 'Комментарий'));
-    const comment = AppUI.createElement('p', '', AppUI.displayValue(coin.comment));
-    comment.style.margin = '0';
-    comment.style.whiteSpace = 'pre-wrap';
-    commentSection.appendChild(comment);
-    content.appendChild(commentSection);
+    if (hasValue(coin.comment)) {
+      const commentSection = AppUI.createElement('section', 'section');
+      commentSection.appendChild(AppUI.createElement('h2', 'section__title', 'Комментарий'));
+      const comment = AppUI.createElement('p', '', coin.comment);
+      comment.style.margin = '0';
+      comment.style.whiteSpace = 'pre-wrap';
+      commentSection.appendChild(comment);
+      content.appendChild(commentSection);
+    }
+  }
+
+  function appendSeriesSection(content, coin) {
+    const series = CoinDB.getSeriesByIds(catalog.series, coin.seriesIds);
+    if (!series.length) return;
+
+    const section = AppUI.createElement('section', 'section');
+    section.appendChild(AppUI.createElement('h2', 'section__title', 'Серии'));
+    const badges = AppUI.createElement('div', 'badge-list');
+    series.forEach(function (item) {
+      badges.appendChild(AppUI.createChip(item.name));
+    });
+    section.appendChild(badges);
+    content.appendChild(section);
+  }
+
+  function hasValue(value) {
+    return String(value || '').trim() !== '' && String(value || '').trim() !== '—';
+  }
+
+  function compactRows(rows) {
+    return rows.filter(function (row) {
+      return hasValue(row[1]);
+    });
+  }
+
+  function appendSection(content, title, rows) {
+    if (!rows.length) return;
+    content.appendChild(createSection(title, rows));
   }
 
   function formatPriceValue(value) {

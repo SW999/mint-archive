@@ -187,8 +187,25 @@ button {
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.6fr) repeat(4, minmax(130px, 1fr));
+  grid-template-columns: minmax(220px, 1.6fr) repeat(2, minmax(130px, 1fr));
   gap: 10px;
+}
+
+.advanced-filters {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.advanced-filters__summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.filters--advanced {
+  grid-template-columns: repeat(3, minmax(130px, 1fr));
+  margin-top: 10px;
 }
 
 .field,
@@ -463,6 +480,40 @@ textarea.field {
 .form-field {
   display: grid;
   gap: 6px;
+}
+
+.form-field--wide {
+  grid-column: 1 / -1;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  font-size: 14px;
+}
+
+.inline-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .form-label {
@@ -750,7 +801,8 @@ textarea.field {
     flex: 1 1 auto;
   }
 
-  .filters {
+  .filters,
+  .filters--advanced {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -855,8 +907,13 @@ textarea.field {
   }
 
   .filters,
+  .filters--advanced,
   .stats,
   .photo-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-add {
     grid-template-columns: 1fr;
   }
 

@@ -170,7 +170,7 @@
   }
 
   async function saveCatalog(catalog) {
-    const text = JSON.stringify(CoinDB.normalizeCatalog(catalog), null, 2);
+    const text = CoinDB.stringifyCatalog(catalog);
     const previousText = CoinDB.getLastSavedText();
 
     const directoryHandle = await getStoredHandle(DIRECTORY_HANDLE_KEY);
@@ -225,7 +225,7 @@
   }
 
   function downloadCatalog(catalog, fileName) {
-    downloadText(JSON.stringify(CoinDB.normalizeCatalog(catalog), null, 2), fileName || 'coins.json');
+    downloadText(CoinDB.stringifyCatalog(catalog), fileName || 'coins.json');
   }
 
 

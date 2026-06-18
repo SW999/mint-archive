@@ -29,7 +29,7 @@
     AppUI.byId('exportButton').addEventListener('click', exportCatalog);
     AppUI.byId('clearButton').addEventListener('click', clearLocalData);
 
-    ['searchInput', 'countryFilter', 'statusFilter', 'materialFilter', 'conditionFilter'].forEach(function (id) {
+    ['searchInput', 'countryFilter', 'statusFilter', 'materialFilter', 'conditionFilter', 'seriesFilter'].forEach(function (id) {
       const node = AppUI.byId(id);
       if (node) node.addEventListener('input', render);
     });
@@ -137,9 +137,10 @@
   function setupFilters() {
     const current = CoinDB.loadCatalog();
     AppUI.fillSelect(AppUI.byId('countryFilter'), CoinDB.uniqueValues(current.coins, 'country'), 'Все страны');
-    AppUI.fillSelect(AppUI.byId('statusFilter'), CoinDB.uniqueValues(current.coins, 'status'), 'Все статусы');
     AppUI.fillSelect(AppUI.byId('materialFilter'), CoinDB.uniqueValues(current.coins, 'material'), 'Все материалы');
+    AppUI.fillSelect(AppUI.byId('statusFilter'), CoinDB.uniqueValues(current.coins, 'status'), 'Все статусы');
     AppUI.fillSelect(AppUI.byId('conditionFilter'), CoinDB.uniqueValues(current.coins, 'condition'), 'Все состояния');
+    AppUI.fillSelect(AppUI.byId('seriesFilter'), current.series.map(function (item) { return { value: item.id, label: item.name }; }), 'Все серии');
   }
 
   function render() {
@@ -158,6 +159,8 @@
     const status = AppUI.byId('statusFilter').value;
     const material = AppUI.byId('materialFilter').value;
     const condition = AppUI.byId('conditionFilter').value;
+    const seriesId = AppUI.byId('seriesFilter') ? AppUI.byId('seriesFilter').value : '';
+    const seriesNameMap = CoinDB.getSeriesNameMap(catalog.series);
 
     return coins.filter(function (coin) {
       const haystack = [
@@ -170,7 +173,8 @@
         coin.catalogNumber,
         coin.condition,
         coin.status,
-        coin.comment
+        coin.comment,
+        (coin.seriesIds || []).map(function (id) { return seriesNameMap.get(id) || ''; }).join(' ')
       ].join(' ').toLowerCase();
 
       if (search && !haystack.includes(search)) return false;
@@ -178,6 +182,7 @@
       if (status && coin.status !== status) return false;
       if (material && coin.material !== material) return false;
       if (condition && coin.condition !== condition) return false;
+      if (seriesId && !(coin.seriesIds || []).includes(seriesId)) return false;
       return true;
     });
   }
@@ -268,6 +273,11 @@
     if (coin.condition) footer.appendChild(AppUI.createChip(coin.condition, 'accent'));
     if (coin.status) footer.appendChild(AppUI.createChip(coin.status, 'success'));
     if (coin.currentValue) footer.appendChild(AppUI.createChip('Оценка: ' + AppCurrency.formatPrice(coin.currentValue)));
+
+    CoinDB.getSeriesByIds(catalog.series, coin.seriesIds).forEach(function (series) {
+      footer.appendChild(AppUI.createChip(series.name));
+    });
+
     content.appendChild(footer);
 
     link.appendChild(image);

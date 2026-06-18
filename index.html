@@ -84,10 +84,16 @@
       <div class="filters">
         <input id="searchInput" class="search-field" type="search" placeholder="Поиск: название, страна, год, каталог..." autocomplete="off">
         <select id="countryFilter" class="select-field" aria-label="Страна"></select>
-        <select id="statusFilter" class="select-field" aria-label="Статус"></select>
         <select id="materialFilter" class="select-field" aria-label="Материал"></select>
-        <select id="conditionFilter" class="select-field" aria-label="Состояние"></select>
       </div>
+      <details class="advanced-filters" aria-label="Дополнительные фильтры">
+        <summary class="advanced-filters__summary">Дополнительные фильтры</summary>
+        <div class="filters filters--advanced">
+          <select id="statusFilter" class="select-field" aria-label="Статус"></select>
+          <select id="conditionFilter" class="select-field" aria-label="Состояние"></select>
+          <select id="seriesFilter" class="select-field" aria-label="Серия"></select>
+        </div>
+      </details>
       <div class="view-toggle" aria-label="Вид каталога">
         <button id="cardsViewButton" class="button view-toggle__button" type="button" data-view="cards">Карточки</button>
         <button id="tableViewButton" class="button view-toggle__button" type="button" data-view="table">Таблица</button>

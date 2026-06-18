@@ -22,6 +22,7 @@
     source: 'Источник',
     currentValue: 'Текущая оценка',
     status: 'Статус',
+    series: 'Серия',
     comment: 'Комментарий',
     obverse: 'Фото аверса',
     reverse: 'Фото реверса'
@@ -40,6 +41,11 @@
     {
       title: 'Характеристики',
       fields: ['material', 'fineness', 'weight', 'diameter', 'thickness', 'mintage', 'condition']
+    },
+    {
+      title: 'Серии',
+      fields: ['series'],
+      type: 'series'
     },
     {
       title: 'Каталог',
@@ -229,14 +235,18 @@
     empty.textContent = placeholderText || 'Все';
     select.appendChild(empty);
 
-    values.forEach(function (value) {
+    const optionValues = [];
+    values.forEach(function (item) {
       const option = document.createElement('option');
+      const value = item && typeof item === 'object' ? item.value : item;
+      const label = item && typeof item === 'object' ? item.label : item;
       option.value = value;
-      option.textContent = value;
+      option.textContent = label;
+      optionValues.push(String(value));
       select.appendChild(option);
     });
 
-    if (values.includes(current)) {
+    if (optionValues.includes(String(current))) {
       select.value = current;
     }
   }
