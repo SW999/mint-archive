@@ -5,6 +5,7 @@
   const STORE_NAME = 'handles';
   const FILE_HANDLE_KEY = 'catalogFile';
   const DIRECTORY_HANDLE_KEY = 'catalogDirectory';
+  const LAST_OPEN_MODE_KEY = 'coinsPwa.lastOpenMode';
 
   function isSupported() {
     return Boolean(window.showOpenFilePicker && window.showSaveFilePicker && window.indexedDB && window.isSecureContext);
@@ -58,6 +59,7 @@
   }
 
   async function clearStoredHandles() {
+    localStorage.removeItem(LAST_OPEN_MODE_KEY);
     if (!window.indexedDB) return;
     const db = await openHandleDB();
     await new Promise(function (resolve, reject) {
@@ -69,12 +71,30 @@
     db.close();
   }
 
-  async function verifyPermission(handle, mode) {
-    if (!handle || !handle.queryPermission || !handle.requestPermission) return false;
-    const options = { mode: mode || 'readwrite' };
+  async function getPermissionState(handle, mode) {
+    if (!handle || !handle.queryPermission) return 'unsupported';
 
-    if ((await handle.queryPermission(options)) === 'granted') return true;
-    return (await handle.requestPermission(options)) === 'granted';
+    try {
+      return await handle.queryPermission({ mode: mode || 'readwrite' });
+    } catch (error) {
+      return 'unsupported';
+    }
+  }
+
+  async function hasPermission(handle, mode) {
+    return (await getPermissionState(handle, mode)) === 'granted';
+  }
+
+  async function requestHandlePermission(handle, mode) {
+    if (!handle || !handle.requestPermission) return false;
+
+    if (await hasPermission(handle, mode)) return true;
+
+    try {
+      return (await handle.requestPermission({ mode: mode || 'readwrite' })) === 'granted';
+    } catch (error) {
+      return false;
+    }
   }
 
   async function parseJsonFile(file) {
@@ -84,6 +104,58 @@
     } catch (error) {
       throw new Error('Файл не похож на корректный JSON: ' + error.message);
     }
+  }
+
+  async function readCatalogFromFileHandle(fileHandle) {
+    const file = await fileHandle.getFile();
+    return {
+      catalog: await parseJsonFile(file),
+      fileName: file.name || 'coins.json',
+      mode: 'file'
+    };
+  }
+
+  async function readCatalogFromDirectoryHandle(directoryHandle) {
+    const fileHandle = await directoryHandle.getFileHandle('coins.json');
+    const result = await readCatalogFromFileHandle(fileHandle);
+    result.fileName = 'coins.json';
+    result.mode = 'directory';
+    return result;
+  }
+
+  async function restoreStoredCatalog(options) {
+    const settings = Object.assign({ requestPermission: false }, options || {});
+    const lastMode = localStorage.getItem(LAST_OPEN_MODE_KEY) || 'directory';
+    const modes = lastMode === 'file' ? ['file', 'directory'] : ['directory', 'file'];
+    let needsPermission = false;
+
+    for (const mode of modes) {
+      const handle = await getStoredHandle(mode === 'directory' ? DIRECTORY_HANDLE_KEY : FILE_HANDLE_KEY);
+      if (!handle) continue;
+
+      const permissionMode = mode === 'directory' ? 'readwrite' : 'read';
+      const granted = settings.requestPermission
+        ? await requestHandlePermission(handle, permissionMode)
+        : await hasPermission(handle, permissionMode);
+
+      if (!granted) {
+        needsPermission = true;
+        continue;
+      }
+
+      try {
+        const result = mode === 'directory'
+          ? await readCatalogFromDirectoryHandle(handle)
+          : await readCatalogFromFileHandle(handle);
+        result.restored = true;
+        localStorage.setItem(LAST_OPEN_MODE_KEY, mode);
+        return result;
+      } catch (error) {
+        console.warn('Cannot restore catalog handle', error);
+      }
+    }
+
+    return { catalog: null, restored: false, needsPermission: needsPermission };
   }
 
   async function openCatalogFile() {
@@ -102,16 +174,12 @@
     });
 
     const fileHandle = handles[0];
-    const file = await fileHandle.getFile();
-    const catalog = await parseJsonFile(file);
+    const result = await readCatalogFromFileHandle(fileHandle);
 
     await setStoredHandle(FILE_HANDLE_KEY, fileHandle);
+    localStorage.setItem(LAST_OPEN_MODE_KEY, 'file');
 
-    return {
-      catalog: catalog,
-      fileName: file.name || 'coins.json',
-      mode: 'file'
-    };
+    return result;
   }
 
   async function openCatalogFolder() {
@@ -120,20 +188,17 @@
     }
 
     const directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-    await verifyPermission(directoryHandle, 'readwrite');
+    const allowed = await requestHandlePermission(directoryHandle, 'readwrite');
+    if (!allowed) throw new Error('Нет разрешения на чтение и запись выбранной папки.');
 
     const fileHandle = await directoryHandle.getFileHandle('coins.json');
-    const file = await fileHandle.getFile();
-    const catalog = await parseJsonFile(file);
+    const result = await readCatalogFromDirectoryHandle(directoryHandle);
 
     await setStoredHandle(DIRECTORY_HANDLE_KEY, directoryHandle);
     await setStoredHandle(FILE_HANDLE_KEY, fileHandle);
+    localStorage.setItem(LAST_OPEN_MODE_KEY, 'directory');
 
-    return {
-      catalog: catalog,
-      fileName: 'coins.json',
-      mode: 'directory'
-    };
+    return result;
   }
 
   async function writeTextToFileHandle(fileHandle, text) {
@@ -167,7 +232,7 @@
     const previousText = CoinDB.getLastSavedText();
 
     const directoryHandle = await getStoredHandle(DIRECTORY_HANDLE_KEY);
-    if (directoryHandle && await verifyPermission(directoryHandle, 'readwrite')) {
+    if (directoryHandle && await requestHandlePermission(directoryHandle, 'readwrite')) {
       const fileHandle = await directoryHandle.getFileHandle('coins.json', { create: true });
       await saveBackupToDirectory(directoryHandle, previousText);
       await writeTextToFileHandle(fileHandle, text);
@@ -175,7 +240,7 @@
     }
 
     const fileHandle = await getStoredHandle(FILE_HANDLE_KEY);
-    if (fileHandle && await verifyPermission(fileHandle, 'readwrite')) {
+    if (fileHandle && await requestHandlePermission(fileHandle, 'readwrite')) {
       await writeTextToFileHandle(fileHandle, text);
       return { saved: true, mode: 'file' };
     }
@@ -230,7 +295,7 @@
   async function loadImageObjectUrl(path) {
     if (!path) return null;
     const directoryHandle = await getStoredHandle(DIRECTORY_HANDLE_KEY);
-    if (!directoryHandle || !(await verifyPermission(directoryHandle, 'read'))) return null;
+    if (!directoryHandle || !(await hasPermission(directoryHandle, 'read'))) return null;
 
     try {
       const file = await getFileFromDirectoryPath(directoryHandle, path);
@@ -255,12 +320,16 @@
     isDirectoryPickerSupported: isDirectoryPickerSupported,
     openCatalogFile: openCatalogFile,
     openCatalogFolder: openCatalogFolder,
+    restoreStoredCatalog: restoreStoredCatalog,
     saveCatalog: saveCatalog,
     downloadCatalog: downloadCatalog,
     downloadBackup: downloadBackup,
     loadImageObjectUrl: loadImageObjectUrl,
     loadPlainFileInput: loadPlainFileInput,
     clearStoredHandles: clearStoredHandles,
+    getPermissionState: getPermissionState,
+    hasPermission: hasPermission,
+    requestHandlePermission: requestHandlePermission,
     timestamp: timestamp
   };
 })();

@@ -8,22 +8,34 @@
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
-    bindEvents();
-    setupStatsPanel();
-    catalog = await AppUI.loadBundledCatalogIfEmpty();
-    setupFilters();
-    await AppCurrency.init();
-    render();
-    AppUI.updateMetaView();
+    AppUI.showLoading('Загрузка каталога...');
 
-    if (!window.isSecureContext) {
-      AppUI.setStatus('Прямая запись в файл работает только в HTTPS/localhost. В режиме file:// будет использоваться скачивание JSON.', '');
+    try {
+      bindEvents();
+      setupStatsPanel();
+      const loadResult = await AppUI.loadCatalogForPage({ useLoading: false });
+      catalog = loadResult.catalog;
+      setupFilters();
+      await AppCurrency.init();
+      render();
+      AppUI.updateMetaView();
+      handleLoadResult(loadResult);
+
+      if (!window.isSecureContext) {
+        AppUI.setStatus('Прямая запись в файл работает только в HTTPS/localhost. В режиме file:// будет использоваться скачивание JSON.', '');
+      }
+    } catch (error) {
+      AppUI.setStatus(error.message || 'Не удалось загрузить каталог.', 'danger');
+    } finally {
+      AppUI.hideLoading();
     }
   }
 
   function bindEvents() {
     AppUI.byId('openFolderButton').addEventListener('click', openFolder);
     AppUI.byId('openFileButton').addEventListener('click', openFile);
+    const restoreButton = AppUI.byId('restoreAccessButton');
+    if (restoreButton) restoreButton.addEventListener('click', restoreAccess);
     AppUI.byId('plainFileInput').addEventListener('change', openPlainFileInput);
     AppUI.byId('saveButton').addEventListener('click', saveCatalog);
     AppUI.byId('exportButton').addEventListener('click', exportCatalog);
@@ -49,6 +61,35 @@
     document.addEventListener('currency-rates-loaded', render);
   }
 
+  function handleLoadResult(loadResult) {
+    const restoreButton = AppUI.byId('restoreAccessButton');
+    if (restoreButton) restoreButton.classList.toggle('hidden', !(loadResult && loadResult.needsPermission));
+
+    if (loadResult && loadResult.needsPermission) {
+      AppUI.setStatus('Браузер помнит выбранный файл или папку, но требует повторное разрешение. Нажми “Восстановить доступ” в блоке “Управление базой”.', 'danger');
+    }
+  }
+
+  async function restoreAccess() {
+    try {
+      const result = await AppUI.restoreStoredCatalogAccess();
+      if (!result || !result.catalog) {
+        AppUI.setStatus('Не удалось восстановить доступ. Открой папку каталога или JSON вручную.', 'danger');
+        return;
+      }
+
+      catalog = result.catalog;
+      setupFilters();
+      render();
+      AppUI.updateMetaView();
+      const restoreButton = AppUI.byId('restoreAccessButton');
+      if (restoreButton) restoreButton.classList.add('hidden');
+      AppUI.setStatus('Доступ восстановлен, каталог загружен.', 'success');
+    } catch (error) {
+      AppUI.setStatus(error.message || 'Не удалось восстановить доступ.', 'danger');
+    }
+  }
+
   async function openFolder() {
     try {
       const result = await AppFileSystem.openCatalogFolder();
@@ -56,6 +97,8 @@
       setupFilters();
       render();
       AppUI.updateMetaView();
+      const restoreButton = AppUI.byId('restoreAccessButton');
+      if (restoreButton) restoreButton.classList.add('hidden');
       AppUI.setStatus('Папка каталога открыта. Фото из images/ будут подгружаться из выбранной папки.', 'success');
     } catch (error) {
       AppUI.setStatus(error.message || 'Не удалось открыть папку.', 'danger');
@@ -74,6 +117,8 @@
       setupFilters();
       render();
       AppUI.updateMetaView();
+      const restoreButton = AppUI.byId('restoreAccessButton');
+      if (restoreButton) restoreButton.classList.add('hidden');
       AppUI.setStatus('JSON-файл открыт. Для локальных фото лучше открывать всю папку каталога.', 'success');
     } catch (error) {
       if (error && error.name === 'AbortError') return;
@@ -91,6 +136,8 @@
       setupFilters();
       render();
       AppUI.updateMetaView();
+      const restoreButton = AppUI.byId('restoreAccessButton');
+      if (restoreButton) restoreButton.classList.add('hidden');
       AppUI.setStatus('JSON-файл загружен через обычный input. Прямая перезапись файла в этом режиме может быть недоступна.', 'success');
     } catch (error) {
       AppUI.setStatus(error.message || 'Не удалось прочитать JSON-файл.', 'danger');

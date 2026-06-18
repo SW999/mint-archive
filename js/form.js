@@ -7,19 +7,35 @@
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
-    await AppCurrency.init();
+    AppUI.showLoading('Загрузка формы...');
 
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    originalCoin = id ? CoinDB.getCoinById(id) : null;
-    mode = originalCoin ? 'edit' : 'create';
+    try {
+      const loadResult = await AppUI.loadCatalogForPage({ useLoading: false });
+      await AppCurrency.init();
 
-    AppUI.setText(AppUI.byId('formTitle'), mode === 'edit' ? 'Редактировать монету' : 'Добавить монету');
-    AppUI.setText(AppUI.byId('formSubtitle'), mode === 'edit' ? CoinDB.getDisplayTitle(originalCoin) : 'Заполни основные поля и сохрани JSON.');
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      originalCoin = id ? CoinDB.getCoinById(id) : null;
+      mode = originalCoin ? 'edit' : 'create';
 
-    renderForm(originalCoin || CoinDB.normalizeCoin({ id: CoinDB.generateId(), status: 'В коллекции' }));
-    bindEvents();
-    AppUI.updateMetaView();
+      if (id && !originalCoin && loadResult && loadResult.needsPermission) {
+        AppUI.setText(AppUI.byId('formTitle'), 'Нужен доступ к базе');
+        AppUI.setText(AppUI.byId('formSubtitle'), 'Вернись в каталог и восстанови доступ к файлу или папке.');
+        AppUI.setStatus('База не загружена: браузер требует повторное разрешение на доступ к файлу.', 'danger');
+        return;
+      }
+
+      AppUI.setText(AppUI.byId('formTitle'), mode === 'edit' ? 'Редактировать монету' : 'Добавить монету');
+      AppUI.setText(AppUI.byId('formSubtitle'), mode === 'edit' ? CoinDB.getDisplayTitle(originalCoin) : 'Заполни основные поля и сохрани JSON.');
+
+      renderForm(originalCoin || CoinDB.normalizeCoin({ id: CoinDB.generateId(), status: 'В коллекции' }));
+      bindEvents();
+      AppUI.updateMetaView();
+    } catch (error) {
+      AppUI.setStatus(error.message || 'Не удалось загрузить форму.', 'danger');
+    } finally {
+      AppUI.hideLoading();
+    }
   }
 
   function bindEvents() {

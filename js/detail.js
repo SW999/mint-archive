@@ -6,26 +6,36 @@
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
-    await AppCurrency.init();
+    AppUI.showLoading('Загрузка монеты...');
 
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    currentCoin = CoinDB.getCoinById(id);
+    try {
+      const loadResult = await AppUI.loadCatalogForPage({ useLoading: false });
+      await AppCurrency.init();
 
-    if (!currentCoin) {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      currentCoin = CoinDB.getCoinById(id);
+
+      if (!currentCoin) {
+        renderMissingCoin(loadResult);
+        return;
+      }
+
+      renderCoin(currentCoin);
+      bindEvents(currentCoin);
+      AppUI.updateMetaView();
+      document.addEventListener('currency-change', function () {
+        renderCoin(currentCoin);
+      });
+      document.addEventListener('currency-rates-loaded', function () {
+        renderCoin(currentCoin);
+      });
+    } catch (error) {
+      AppUI.setStatus(error.message || 'Не удалось загрузить монету.', 'danger');
       renderMissingCoin();
-      return;
+    } finally {
+      AppUI.hideLoading();
     }
-
-    renderCoin(currentCoin);
-    bindEvents(currentCoin);
-    AppUI.updateMetaView();
-    document.addEventListener('currency-change', function () {
-      renderCoin(currentCoin);
-    });
-    document.addEventListener('currency-rates-loaded', function () {
-      renderCoin(currentCoin);
-    });
   }
 
   function bindEvents(coin) {
@@ -57,12 +67,15 @@
     }
   }
 
-  function renderMissingCoin() {
-    AppUI.setText(AppUI.byId('detailTitle'), 'Монета не найдена');
-    AppUI.setText(AppUI.byId('detailSubtitle'), 'Проверь id в адресной строке или вернись в каталог.');
+  function renderMissingCoin(loadResult) {
+    const needsPermission = loadResult && loadResult.needsPermission;
+    AppUI.setText(AppUI.byId('detailTitle'), needsPermission ? 'Нужен доступ к базе' : 'Монета не найдена');
+    AppUI.setText(AppUI.byId('detailSubtitle'), needsPermission ? 'Вернись в каталог и восстанови доступ к файлу или папке.' : 'Проверь id в адресной строке или вернись в каталог.');
     const content = AppUI.byId('detailContent');
     if (content) {
-      content.innerHTML = '<div class="empty-state">Нет данных для отображения.</div>';
+      content.innerHTML = '<div class="empty-state">' +
+        (needsPermission ? 'База не загружена: браузер требует повторное разрешение на доступ к файлу.' : 'Нет данных для отображения.') +
+        '</div>';
     }
   }
 
