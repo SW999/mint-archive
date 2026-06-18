@@ -6,36 +6,26 @@
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
-    AppUI.showLoading('Загрузка монеты...');
+    await AppCurrency.init();
 
-    try {
-      const loadResult = await AppUI.loadCatalogForPage({ useLoading: false });
-      await AppCurrency.init();
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    currentCoin = CoinDB.getCoinById(id);
 
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      currentCoin = CoinDB.getCoinById(id);
-
-      if (!currentCoin) {
-        renderMissingCoin(loadResult);
-        return;
-      }
-
-      renderCoin(currentCoin);
-      bindEvents(currentCoin);
-      AppUI.updateMetaView();
-      document.addEventListener('currency-change', function () {
-        renderCoin(currentCoin);
-      });
-      document.addEventListener('currency-rates-loaded', function () {
-        renderCoin(currentCoin);
-      });
-    } catch (error) {
-      AppUI.setStatus(error.message || 'Не удалось загрузить монету.', 'danger');
+    if (!currentCoin) {
       renderMissingCoin();
-    } finally {
-      AppUI.hideLoading();
+      return;
     }
+
+    renderCoin(currentCoin);
+    bindEvents(currentCoin);
+    AppUI.updateMetaView();
+    document.addEventListener('currency-change', function () {
+      renderCoin(currentCoin);
+    });
+    document.addEventListener('currency-rates-loaded', function () {
+      renderCoin(currentCoin);
+    });
   }
 
   function bindEvents(coin) {
@@ -47,7 +37,7 @@
       deleteButton.addEventListener('click', async function () {
         const confirmed = await AppUI.confirmDialog({
           title: 'Удалить монету?',
-          message: 'Монета будет удалена из каталога. Перед сохранением будет создан backup, если открыт каталог как папка.',
+          message: 'Монета будет удалена из каталога. При сохранении будет автоматически создан backup, если открыт каталог как папка.',
           confirmText: 'Удалить',
           danger: true
         });
@@ -56,7 +46,7 @@
         try {
           const catalog = CoinDB.deleteCoin(coin.id);
           const result = await AppUI.persistCatalogOrDownload(catalog);
-          AppUI.setStatus(result.mode === 'download' ? 'Монета удалена. Обновленный JSON скачан.' : 'Монета удалена и файл сохранен.', 'success');
+          AppUI.setStatus(AppUI.formatSaveResultMessage(result, 'Монета удалена и файл сохранен.', 'Монета удалена. Обновленный JSON скачан.'), 'success');
           window.setTimeout(function () {
             window.location.href = 'index.html';
           }, 500);
@@ -67,15 +57,12 @@
     }
   }
 
-  function renderMissingCoin(loadResult) {
-    const needsPermission = loadResult && loadResult.needsPermission;
-    AppUI.setText(AppUI.byId('detailTitle'), needsPermission ? 'Нужен доступ к базе' : 'Монета не найдена');
-    AppUI.setText(AppUI.byId('detailSubtitle'), needsPermission ? 'Вернись в каталог и восстанови доступ к файлу или папке.' : 'Проверь id в адресной строке или вернись в каталог.');
+  function renderMissingCoin() {
+    AppUI.setText(AppUI.byId('detailTitle'), 'Монета не найдена');
+    AppUI.setText(AppUI.byId('detailSubtitle'), 'Проверь id в адресной строке или вернись в каталог.');
     const content = AppUI.byId('detailContent');
     if (content) {
-      content.innerHTML = '<div class="empty-state">' +
-        (needsPermission ? 'База не загружена: браузер требует повторное разрешение на доступ к файлу.' : 'Нет данных для отображения.') +
-        '</div>';
+      content.innerHTML = '<div class="empty-state">Нет данных для отображения.</div>';
     }
   }
 

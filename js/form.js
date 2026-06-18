@@ -3,44 +3,40 @@
 
   let mode = 'create';
   let originalCoin = null;
+  let draftKey = '';
+  let draftTimer = null;
+  let isSubmitting = false;
 
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
-    AppUI.showLoading('Загрузка формы...');
+    await AppCurrency.init();
 
-    try {
-      const loadResult = await AppUI.loadCatalogForPage({ useLoading: false });
-      await AppCurrency.init();
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    originalCoin = id ? CoinDB.getCoinById(id) : null;
+    mode = originalCoin ? 'edit' : 'create';
 
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      originalCoin = id ? CoinDB.getCoinById(id) : null;
-      mode = originalCoin ? 'edit' : 'create';
+    AppUI.setText(AppUI.byId('formTitle'), mode === 'edit' ? 'Редактировать монету' : 'Добавить монету');
+    AppUI.setText(AppUI.byId('formSubtitle'), mode === 'edit' ? CoinDB.getDisplayTitle(originalCoin) : 'Заполни основные поля и сохрани JSON.');
 
-      if (id && !originalCoin && loadResult && loadResult.needsPermission) {
-        AppUI.setText(AppUI.byId('formTitle'), 'Нужен доступ к базе');
-        AppUI.setText(AppUI.byId('formSubtitle'), 'Вернись в каталог и восстанови доступ к файлу или папке.');
-        AppUI.setStatus('База не загружена: браузер требует повторное разрешение на доступ к файлу.', 'danger');
-        return;
-      }
+    draftKey = getDraftKey(id);
 
-      AppUI.setText(AppUI.byId('formTitle'), mode === 'edit' ? 'Редактировать монету' : 'Добавить монету');
-      AppUI.setText(AppUI.byId('formSubtitle'), mode === 'edit' ? CoinDB.getDisplayTitle(originalCoin) : 'Заполни основные поля и сохрани JSON.');
-
-      renderForm(originalCoin || CoinDB.normalizeCoin({ id: CoinDB.generateId(), status: 'В коллекции' }));
-      bindEvents();
-      AppUI.updateMetaView();
-    } catch (error) {
-      AppUI.setStatus(error.message || 'Не удалось загрузить форму.', 'danger');
-    } finally {
-      AppUI.hideLoading();
-    }
+    renderForm(originalCoin || CoinDB.normalizeCoin({ id: CoinDB.generateId(), status: 'В коллекции' }));
+    bindEvents();
+    await offerDraftRestore();
+    AppUI.updateMetaView();
   }
 
   function bindEvents() {
     const form = AppUI.byId('coinForm');
     form.addEventListener('submit', submitForm);
+    form.addEventListener('input', scheduleDraftSave);
+    form.addEventListener('change', scheduleDraftSave);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') saveDraftNow();
+    });
+    window.addEventListener('pagehide', saveDraftNow);
 
     const deleteButton = AppUI.byId('deleteButton');
     if (mode === 'edit') {
@@ -190,21 +186,77 @@
     return coin;
   }
 
+
+  function getDraftKey(id) {
+    return mode === 'edit' && id ? 'coin-form:edit:' + id : 'coin-form:create';
+  }
+
+  async function offerDraftRestore() {
+    if (!window.AppDrafts || !AppDrafts.isSupported() || !draftKey) return;
+
+    const draft = await AppDrafts.getDraft(draftKey);
+    if (!draft || !draft.coin) return;
+
+    const date = draft.updatedAt ? new Date(draft.updatedAt).toLocaleString('ru-RU') : '';
+    const confirmed = await AppUI.confirmDialog({
+      title: 'Восстановить черновик?',
+      message: 'Найден несохраненный черновик формы' + (date ? ' от ' + date : '') + '. Восстановить его?',
+      confirmText: 'Восстановить'
+    });
+
+    if (confirmed) {
+      renderForm(CoinDB.normalizeCoin(draft.coin));
+      AppUI.setStatus('Черновик восстановлен из IndexedDB.', 'success');
+    } else {
+      await clearDraft();
+    }
+  }
+
+  function scheduleDraftSave() {
+    if (isSubmitting || !draftKey || !window.AppDrafts || !AppDrafts.isSupported()) return;
+    window.clearTimeout(draftTimer);
+    draftTimer = window.setTimeout(saveDraftNow, 350);
+  }
+
+  async function saveDraftNow() {
+    if (isSubmitting || !draftKey || !window.AppDrafts || !AppDrafts.isSupported()) return;
+
+    try {
+      await AppDrafts.saveDraft(draftKey, {
+        mode: mode,
+        coinId: originalCoin && originalCoin.id,
+        coin: readFormCoin()
+      });
+    } catch (error) {
+      console.warn('Cannot save form draft', error);
+    }
+  }
+
+  async function clearDraft() {
+    if (!draftKey || !window.AppDrafts || !AppDrafts.isSupported()) return;
+    window.clearTimeout(draftTimer);
+    await AppDrafts.clearDraft(draftKey);
+  }
+
+
   async function submitForm(event) {
     event.preventDefault();
     AppUI.setStatus('', '');
 
     try {
       const coin = readFormCoin();
+      isSubmitting = true;
       const catalog = CoinDB.upsertCoin(coin);
       const result = await AppUI.persistCatalogOrDownload(catalog);
+      await clearDraft();
       AppUI.updateMetaView();
-      AppUI.setStatus(result.mode === 'download' ? 'Монета сохранена. Обновленный JSON скачан.' : 'Монета сохранена в coins.json.', 'success');
+      AppUI.setStatus(AppUI.formatSaveResultMessage(result, 'Монета сохранена в coins.json.', 'Монета сохранена. Обновленный JSON скачан.'), 'success');
 
       window.setTimeout(function () {
         window.location.href = 'coin.html?id=' + encodeURIComponent(coin.id);
       }, 450);
     } catch (error) {
+      isSubmitting = false;
       AppUI.setStatus(error.message || 'Не удалось сохранить монету.', 'danger');
     }
   }
@@ -213,21 +265,24 @@
     if (!originalCoin) return;
     const confirmed = await AppUI.confirmDialog({
       title: 'Удалить монету?',
-      message: 'Монета будет удалена из каталога. Перед сохранением будет создан backup, если открыт каталог как папка.',
+      message: 'Монета будет удалена из каталога. При сохранении будет автоматически создан backup, если открыт каталог как папка.',
       confirmText: 'Удалить',
       danger: true
     });
     if (!confirmed) return;
 
     try {
+      isSubmitting = true;
       const catalog = CoinDB.deleteCoin(originalCoin.id);
       const result = await AppUI.persistCatalogOrDownload(catalog);
-      AppUI.setStatus(result.mode === 'download' ? 'Монета удалена. Обновленный JSON скачан.' : 'Монета удалена из coins.json.', 'success');
+      await clearDraft();
+      AppUI.setStatus(AppUI.formatSaveResultMessage(result, 'Монета удалена из coins.json.', 'Монета удалена. Обновленный JSON скачан.'), 'success');
 
       window.setTimeout(function () {
         window.location.href = 'index.html';
       }, 450);
     } catch (error) {
+      isSubmitting = false;
       AppUI.setStatus(error.message || 'Не удалось удалить монету.', 'danger');
     }
   }

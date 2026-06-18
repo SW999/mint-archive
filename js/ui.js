@@ -144,45 +144,6 @@
     }
   }
 
-  function getLoadingOverlay() {
-    let overlay = byId('loadingOverlay');
-    if (overlay) return overlay;
-
-    overlay = createElement('div', 'loading-overlay hidden');
-    overlay.id = 'loadingOverlay';
-    overlay.setAttribute('role', 'status');
-    overlay.setAttribute('aria-live', 'polite');
-    overlay.innerHTML = '<div class="loading-card"><span class="spinner" aria-hidden="true"></span><span id="loadingMessage">Загрузка...</span></div>';
-    document.body.appendChild(overlay);
-    return overlay;
-  }
-
-  function showLoading(message) {
-    const overlay = getLoadingOverlay();
-    const messageNode = byId('loadingMessage');
-    if (messageNode) messageNode.textContent = message || 'Загрузка...';
-    overlay.classList.remove('hidden');
-    document.body.classList.add('is-loading');
-  }
-
-  function hideLoading() {
-    const overlay = byId('loadingOverlay');
-    if (overlay) overlay.classList.add('hidden');
-    document.body.classList.remove('is-loading');
-  }
-
-  function setControlsDisabled(disabled) {
-    document.querySelectorAll('button, input, select, textarea, a.link-button').forEach(function (node) {
-      if (node.id === 'plainFileInput') return;
-      if (node.tagName === 'A') {
-        node.classList.toggle('is-disabled', Boolean(disabled));
-        node.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-        return;
-      }
-      node.disabled = Boolean(disabled);
-    });
-  }
-
   function updateMetaView() {
     const meta = CoinDB.getMeta();
     const fileNameNode = byId('fileName');
@@ -195,72 +156,17 @@
   }
 
   async function loadBundledCatalogIfEmpty() {
-    const result = await loadCatalogForPage({ useLoading: false });
-    return result.catalog;
-  }
-
-  async function loadCatalogForPage(options) {
-    const settings = Object.assign({
-      loadingMessage: 'Загрузка базы...',
-      useLoading: true,
-      bundledFallback: true
-    }, options || {});
-
-    if (settings.useLoading) showLoading(settings.loadingMessage);
+    const current = CoinDB.loadCatalog();
+    if (current.coins.length > 0) return current;
 
     try {
-      let current = CoinDB.loadCatalog();
-      if (current.coins.length > 0) {
-        return { catalog: current, source: 'localStorage', needsPermission: false };
-      }
-
-      if (window.AppFileSystem && AppFileSystem.restoreStoredCatalog) {
-        const restored = await AppFileSystem.restoreStoredCatalog({ requestPermission: false });
-        if (restored && restored.catalog) {
-          const normalized = CoinDB.setCatalogFromFile(restored.catalog, restored.fileName || 'coins.json');
-          return { catalog: normalized, source: restored.mode || 'storedHandle', needsPermission: false };
-        }
-
-        if (restored && restored.needsPermission) {
-          return { catalog: current, source: 'permissionRequired', needsPermission: true };
-        }
-      }
-
-      if (settings.bundledFallback) {
-        try {
-          const response = await fetch('data/coins.json', { cache: 'no-store' });
-          if (response.ok) {
-            const catalog = await response.json();
-            const normalized = CoinDB.setCatalogFromFile(catalog, 'data/coins.json');
-            return { catalog: normalized, source: 'bundled', needsPermission: false };
-          }
-        } catch (error) {
-          console.warn('Cannot load bundled catalog', error);
-        }
-      }
-
-      current = CoinDB.loadCatalog();
-      return { catalog: current, source: 'empty', needsPermission: false };
-    } finally {
-      if (settings.useLoading) hideLoading();
-    }
-  }
-
-  async function restoreStoredCatalogAccess() {
-    if (!window.AppFileSystem || !AppFileSystem.restoreStoredCatalog) {
-      return { catalog: null, restored: false, needsPermission: false };
-    }
-
-    showLoading('Восстановление доступа к базе...');
-    try {
-      const result = await AppFileSystem.restoreStoredCatalog({ requestPermission: true });
-      if (result && result.catalog) {
-        const normalized = CoinDB.setCatalogFromFile(result.catalog, result.fileName || 'coins.json');
-        return Object.assign({}, result, { catalog: normalized, restored: true });
-      }
-      return result || { catalog: null, restored: false, needsPermission: false };
-    } finally {
-      hideLoading();
+      const response = await fetch('data/coins.json', { cache: 'no-store' });
+      if (!response.ok) return current;
+      const catalog = await response.json();
+      const normalized = CoinDB.setCatalogFromFile(catalog, 'data/coins.json');
+      return normalized;
+    } catch (error) {
+      return current;
     }
   }
 
@@ -274,6 +180,28 @@
     AppFileSystem.downloadCatalog(catalog, 'coins.json');
     CoinDB.markSaved(catalog);
     return { saved: true, mode: 'download' };
+  }
+
+
+  function formatSaveResultMessage(result, baseMessage, downloadMessage) {
+    const settings = result || {};
+    if (settings.mode === 'download') {
+      return downloadMessage || 'Изменения сохранены через скачивание JSON.';
+    }
+
+    if (settings.mode === 'file') {
+      return (baseMessage || 'Файл сохранен.') + ' Backup не создан: открыт отдельный файл, а не папка каталога.';
+    }
+
+    if (settings.backupCreated) {
+      return (baseMessage || 'Файл сохранен.') + ' Backup создан автоматически.';
+    }
+
+    if (settings.backupError) {
+      return (baseMessage || 'Файл сохранен.') + ' Backup создать не удалось.';
+    }
+
+    return baseMessage || 'Файл сохранен.';
   }
 
   function getFieldLabel(field) {
@@ -346,14 +274,10 @@
     displayValue: displayValue,
     appendDataItem: appendDataItem,
     fillSelect: fillSelect,
-    showLoading: showLoading,
-    hideLoading: hideLoading,
-    setControlsDisabled: setControlsDisabled,
     updateMetaView: updateMetaView,
     loadBundledCatalogIfEmpty: loadBundledCatalogIfEmpty,
-    loadCatalogForPage: loadCatalogForPage,
-    restoreStoredCatalogAccess: restoreStoredCatalogAccess,
     persistCatalogOrDownload: persistCatalogOrDownload,
+    formatSaveResultMessage: formatSaveResultMessage,
     getFieldLabel: getFieldLabel,
     confirmDialog: confirmDialog
   };
