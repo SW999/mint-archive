@@ -7,6 +7,7 @@
 
   const COIN_REQUIRED_FIELDS = ['id'];
   const COIN_OPTIONAL_FIELDS = [
+    'issuerId',
     'country',
     'nominal',
     'title',
@@ -38,7 +39,8 @@
     version: 'number',
     updatedAt: 'ISO date string',
     series: '[{ id: string, name: string }]',
-    coins: '[coin]'
+    coins: '[coin]',
+    issuers: 'static dictionary in data/issuers.json; new coins store issuerId, legacy coins may store country text'
   };
 
   function emptyCatalog() {
@@ -97,6 +99,10 @@
 
   function normalizeCoinField(field, value) {
     if (MONEY_FIELDS.includes(field)) return normalizeDecimalText(value);
+    if (field === 'issuerId') {
+      const text = stripUnsafeControlChars(value);
+      return /^\d+$/.test(text) ? text : '';
+    }
     return stripUnsafeControlChars(value, { multiline: MULTILINE_FIELDS.includes(field) });
   }
 
@@ -131,6 +137,15 @@
       coin[field] = normalizeCoinField(field, source[field]);
     });
 
+    if (!coin.issuerId && source.countryId !== undefined) {
+      coin.issuerId = normalizeCoinField('issuerId', source.countryId);
+    }
+
+    if (!coin.issuerId && /^\d+$/.test(normalizeValue(source.country).trim())) {
+      coin.issuerId = normalizeCoinField('issuerId', source.country);
+      coin.country = '';
+    }
+
     if (!coin.id) {
       coin.id = generateId();
     }
@@ -149,8 +164,14 @@
     const coin = { id: source.id };
 
     COIN_OPTIONAL_FIELDS.forEach(function (field) {
+      if (field === 'country' && source.issuerId) return;
       const value = normalizeCoinField(field, source[field]);
-      if (value) coin[field] = value;
+      if (!value) return;
+      if (field === 'issuerId') {
+        coin[field] = Number(value);
+      } else {
+        coin[field] = value;
+      }
     });
 
     const obverse = normalizeValue(source.photos && source.photos.obverse).trim();
@@ -328,7 +349,8 @@
     if (!coin) return 'Монета';
     const title = [coin.nominal, coin.title].filter(Boolean).join(' · ');
     if (title) return title;
-    return [coin.country, coin.year].filter(Boolean).join(' · ') || 'Монета без названия';
+    const issuer = window.AppIssuers ? AppIssuers.getCoinIssuerName(coin) : coin.country;
+    return [issuer, coin.year].filter(Boolean).join(' · ') || 'Монета без названия';
   }
 
   function normalizeDateForInput(value) {

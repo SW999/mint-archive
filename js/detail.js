@@ -8,6 +8,7 @@
 
   async function init() {
     await AppCurrency.init();
+    if (window.AppIssuers) await AppIssuers.init();
 
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -71,7 +72,7 @@
   function renderCoin(coin) {
     document.title = CoinDB.getDisplayTitle(coin) + ' · Каталог монет';
     AppUI.setText(AppUI.byId('detailTitle'), CoinDB.getDisplayTitle(coin));
-    AppUI.setText(AppUI.byId('detailSubtitle'), CoinDB.compactText([coin.country, coin.year, coin.mint]));
+    AppUI.setText(AppUI.byId('detailSubtitle'), CoinDB.compactText([AppIssuers.getCoinIssuerName(coin), coin.year, coin.mint]));
 
     AppUI.setCoinImage(AppUI.byId('obverseImage'), coin.photos && coin.photos.obverse, 'obverse', { lazy: false });
     AppUI.setCoinImage(AppUI.byId('reverseImage'), coin.photos && coin.photos.reverse, 'reverse', { lazy: false });
@@ -94,7 +95,7 @@
     content.innerHTML = '';
 
     appendSection(content, 'Основное', compactRows([
-      ['Страна', coin.country],
+      ['Страна/эмитент', AppIssuers.getCoinIssuerName(coin)],
       ['Номинал', coin.nominal],
       ['Название', coin.title],
       ['Год', coin.year],

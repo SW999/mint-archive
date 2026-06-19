@@ -3,7 +3,8 @@
 
   const FIELD_LABELS = {
     id: 'ID',
-    country: 'Страна',
+    issuerId: 'Страна/эмитент',
+    country: 'Страна/эмитент',
     nominal: 'Номинал',
     title: 'Название',
     year: 'Год',
@@ -36,7 +37,7 @@
     },
     {
       title: 'Основное',
-      fields: ['country', 'nominal', 'title', 'year', 'mint', 'strikeType', 'status']
+      fields: ['issuerId', 'nominal', 'title', 'year', 'mint', 'strikeType', 'status']
     },
     {
       title: 'Характеристики',

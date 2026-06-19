@@ -71,7 +71,7 @@
         </div>
         <div class="stat-card">
           <span id="countryCount" class="stat-card__value">0</span>
-          <span class="stat-card__label">Стран</span>
+          <span class="stat-card__label">Эмитентов</span>
         </div>
         <div class="stat-card">
           <span id="materialCount" class="stat-card__value">0</span>
@@ -82,8 +82,8 @@
 
     <section class="panel toolbar" aria-label="Поиск и фильтры">
       <div class="filters">
-        <input id="searchInput" class="search-field" type="search" placeholder="Поиск: название, страна, год, каталог..." autocomplete="off">
-        <select id="countryFilter" class="select-field" aria-label="Страна"></select>
+        <input id="searchInput" class="search-field" type="search" placeholder="Поиск: название, эмитент, год, каталог..." autocomplete="off">
+        <select id="countryFilter" class="select-field" aria-label="Страна/эмитент"></select>
         <select id="materialFilter" class="select-field" aria-label="Материал"></select>
       </div>
       <details class="advanced-filters" aria-label="Дополнительные фильтры">
@@ -109,6 +109,7 @@
   </main>
 
   <script src="js/db.js"></script>
+  <script src="js/issuers.js"></script>
   <script src="js/file-system.js"></script>
   <script src="js/currency.js"></script>
   <script src="js/ui.js"></script>

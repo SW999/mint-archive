@@ -1,13 +1,15 @@
-const CACHE_NAME = 'coins-pwa-v9';
+const CACHE_NAME = 'coins-pwa-v10';
 const APP_SHELL = [
   './',
   './index.html',
   './coin.html',
   './form.html',
   './manifest.json',
+  './data/issuers.json',
   './css/styles.css',
   './js/app.js',
   './js/db.js',
+  './js/issuers.js',
   './js/file-system.js',
   './js/currency.js',
   './js/ui.js',
@@ -39,6 +41,18 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.pathname.endsWith('/data/issuers.json')) {
+    event.respondWith(
+      fetch(request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        return response;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then(cached => cached || fetch(request))

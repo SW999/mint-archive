@@ -12,6 +12,7 @@
 
   async function init() {
     await AppCurrency.init();
+    if (window.AppIssuers) await AppIssuers.init();
 
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -74,6 +75,8 @@
         grid.appendChild(createTextareaField(field, getValue(coin, field)));
       } else if (field.indexOf('photos.') === 0) {
         grid.appendChild(createPhotoField(field, getValue(coin, field)));
+      } else if (field === 'issuerId') {
+        grid.appendChild(createIssuerField(coin));
       } else {
         grid.appendChild(createInputField(field, getValue(coin, field)));
       }
@@ -99,7 +102,7 @@
       input.type = 'text';
     }
 
-    if (field === 'country' || field === 'nominal' || field === 'title') {
+    if (field === 'nominal' || field === 'title') {
       input.autocapitalize = 'sentences';
     }
 
@@ -113,6 +116,43 @@
     }
 
     wrapper.appendChild(input);
+    return wrapper;
+  }
+
+
+  function createIssuerField(coin) {
+    const wrapper = AppUI.createElement('label', 'form-field');
+    wrapper.appendChild(AppUI.createElement('span', 'form-label', AppUI.getFieldLabel('issuerId')));
+
+    const select = document.createElement('select');
+    select.className = 'select-field';
+    select.name = 'issuerId';
+
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.textContent = 'Не выбрано';
+    select.appendChild(empty);
+
+    const legacyCountry = window.AppIssuers ? AppIssuers.getLegacyCountryForForm(coin) : '';
+    if (legacyCountry) {
+      const legacyOption = document.createElement('option');
+      legacyOption.value = 'legacy:' + legacyCountry;
+      legacyOption.textContent = legacyCountry + ' (старое значение)';
+      select.appendChild(legacyOption);
+    }
+
+    const selectedIssuerId = window.AppIssuers ? AppIssuers.getCoinIssuerIdForForm(coin) : String(coin.issuerId || '');
+    const options = window.AppIssuers ? AppIssuers.getIssuerOptions() : [];
+    options.forEach(function (item) {
+      const option = document.createElement('option');
+      option.value = item.value;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+
+    select.value = selectedIssuerId || (legacyCountry ? 'legacy:' + legacyCountry : '');
+    wrapper.appendChild(select);
+    wrapper.appendChild(AppUI.createElement('p', 'small-note', 'Новые и отредактированные монеты сохраняют id эмитента. Старые строковые значения страны читаются для совместимости.'));
     return wrapper;
   }
 
@@ -250,6 +290,7 @@
   function getValue(coin, field) {
     if (field === 'photos.obverse') return coin.photos && coin.photos.obverse;
     if (field === 'photos.reverse') return coin.photos && coin.photos.reverse;
+    if (field === 'issuerId') return window.AppIssuers ? AppIssuers.getCoinIssuerIdForForm(coin) : coin.issuerId;
     return coin[field];
   }
 
@@ -291,11 +332,20 @@
     const coin = CoinDB.normalizeCoin(originalCoin || { id: formData.get('id') || CoinDB.generateId() });
 
     CoinDB.COIN_FIELDS.forEach(function (field) {
-      if (field === 'id') return;
+      if (field === 'id' || field === 'issuerId' || field === 'country') return;
       if (!formData.has(field)) return;
       const value = formData.get(field);
       coin[field] = normalizeFormValue(field, value);
     });
+
+    const issuerValue = String(formData.get('issuerId') || '').trim();
+    if (issuerValue.indexOf('legacy:') === 0) {
+      coin.issuerId = '';
+      coin.country = normalizeFormValue('country', issuerValue.slice(7));
+    } else {
+      coin.issuerId = normalizeFormValue('issuerId', issuerValue);
+      coin.country = '';
+    }
 
     coin.id = originalCoin ? originalCoin.id : (coin.id || CoinDB.generateId());
     coin.photos = {

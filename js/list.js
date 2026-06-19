@@ -11,6 +11,7 @@
     bindEvents();
     setupStatsPanel();
     catalog = await AppUI.loadBundledCatalogIfEmpty();
+    await AppIssuers.init();
     setupFilters();
     await AppCurrency.init();
     render();
@@ -136,7 +137,7 @@
 
   function setupFilters() {
     const current = CoinDB.loadCatalog();
-    AppUI.fillSelect(AppUI.byId('countryFilter'), CoinDB.uniqueValues(current.coins, 'country'), 'Все страны');
+    AppUI.fillSelect(AppUI.byId('countryFilter'), AppIssuers.getUsedIssuerOptions(current.coins), 'Все эмитенты');
     AppUI.fillSelect(AppUI.byId('materialFilter'), CoinDB.uniqueValues(current.coins, 'material'), 'Все материалы');
     AppUI.fillSelect(AppUI.byId('statusFilter'), CoinDB.uniqueValues(current.coins, 'status'), 'Все статусы');
     AppUI.fillSelect(AppUI.byId('conditionFilter'), CoinDB.uniqueValues(current.coins, 'condition'), 'Все состояния');
@@ -164,6 +165,7 @@
 
     return coins.filter(function (coin) {
       const haystack = [
+        AppIssuers.getCoinIssuerName(coin),
         coin.country,
         coin.nominal,
         coin.title,
@@ -178,7 +180,7 @@
       ].join(' ').toLowerCase();
 
       if (search && !haystack.includes(search)) return false;
-      if (country && coin.country !== country) return false;
+      if (country && !AppIssuers.matchesCoin(coin, country)) return false;
       if (status && coin.status !== status) return false;
       if (material && coin.material !== material) return false;
       if (condition && coin.condition !== condition) return false;
@@ -222,7 +224,7 @@
 
   function renderStats(currentCoins) {
     AppUI.setText(AppUI.byId('totalCoins'), String(currentCoins.length));
-    AppUI.setText(AppUI.byId('countryCount'), String(CoinDB.uniqueValues(currentCoins, 'country').length));
+    AppUI.setText(AppUI.byId('countryCount'), String(AppIssuers.uniqueUsedCount(currentCoins)));
     AppUI.setText(AppUI.byId('materialCount'), String(CoinDB.uniqueValues(currentCoins, 'material').length));
   }
 
@@ -266,7 +268,7 @@
 
     const content = AppUI.createElement('div', 'coin-card__content');
     content.appendChild(AppUI.createElement('h2', 'coin-card__title', CoinDB.getDisplayTitle(coin)));
-    content.appendChild(AppUI.createElement('p', 'coin-card__meta', CoinDB.compactText([coin.country, coin.year, coin.mint])));
+    content.appendChild(AppUI.createElement('p', 'coin-card__meta', CoinDB.compactText([AppIssuers.getCoinIssuerName(coin), coin.year, coin.mint])));
     content.appendChild(AppUI.createElement('p', 'coin-card__submeta', CoinDB.compactText([coin.material, coin.fineness, coin.catalogNumber])));
 
     const footer = AppUI.createElement('div', 'coin-card__footer');
@@ -302,7 +304,7 @@
         window.location.href = 'coin.html?id=' + encodeURIComponent(coin.id);
       });
       row.appendChild(AppUI.createElement('td', 'coin-table__title', CoinDB.getDisplayTitle(coin)));
-      row.appendChild(AppUI.createElement('td', '', coin.country || '—'));
+      row.appendChild(AppUI.createElement('td', '', AppIssuers.getCoinIssuerName(coin) || '—'));
       row.appendChild(AppUI.createElement('td', '', coin.year || '—'));
       row.appendChild(AppUI.createElement('td', '', coin.material || '—'));
       row.appendChild(AppUI.createElement('td', '', coin.condition || '—'));

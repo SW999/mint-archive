@@ -1,0 +1,1211 @@
+[
+  {
+    "id": 1,
+    "name": "Австралия",
+    "aliases": [
+      "Australia",
+      "Commonwealth of Australia"
+    ],
+    "type": "modern",
+    "region": "Oceania"
+  },
+  {
+    "id": 2,
+    "name": "Австрия",
+    "aliases": [
+      "Austria",
+      "Österreich"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 3,
+    "name": "Австро-Венгрия",
+    "aliases": [
+      "Austro-Hungarian Empire",
+      "Austria-Hungary"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 4,
+    "name": "Австрийская империя",
+    "aliases": [
+      "Austrian Empire"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 5,
+    "name": "Беларусь",
+    "aliases": [
+      "Belarus",
+      "Республика Беларусь"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 6,
+    "name": "Бельгия",
+    "aliases": [
+      "Belgium"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 7,
+    "name": "Болгария",
+    "aliases": [
+      "Bulgaria"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 8,
+    "name": "Бразилия",
+    "aliases": [
+      "Brazil"
+    ],
+    "type": "modern",
+    "region": "South America"
+  },
+  {
+    "id": 9,
+    "name": "Великобритания",
+    "aliases": [
+      "United Kingdom",
+      "Great Britain",
+      "UK"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 10,
+    "name": "Англия",
+    "aliases": [
+      "England"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 11,
+    "name": "Шотландия",
+    "aliases": [
+      "Scotland"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 12,
+    "name": "Ирландия",
+    "aliases": [
+      "Ireland"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 13,
+    "name": "Канада",
+    "aliases": [
+      "Canada"
+    ],
+    "type": "modern",
+    "region": "North America"
+  },
+  {
+    "id": 14,
+    "name": "США",
+    "aliases": [
+      "USA",
+      "United States",
+      "United States of America"
+    ],
+    "type": "modern",
+    "region": "North America"
+  },
+  {
+    "id": 15,
+    "name": "Мексика",
+    "aliases": [
+      "Mexico"
+    ],
+    "type": "modern",
+    "region": "North America"
+  },
+  {
+    "id": 16,
+    "name": "Франция",
+    "aliases": [
+      "France"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 17,
+    "name": "Французская империя",
+    "aliases": [
+      "French Empire"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 18,
+    "name": "Германия",
+    "aliases": [
+      "Germany",
+      "Deutschland"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 19,
+    "name": "Германская империя",
+    "aliases": [
+      "German Empire",
+      "Deutsches Reich"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 20,
+    "name": "Веймарская республика",
+    "aliases": [
+      "Weimar Republic",
+      "Ваймарская республика"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 21,
+    "name": "Третий рейх",
+    "aliases": [
+      "Nazi Germany",
+      "Third Reich"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 22,
+    "name": "ГДР",
+    "aliases": [
+      "East Germany",
+      "German Democratic Republic"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 23,
+    "name": "ФРГ",
+    "aliases": [
+      "West Germany",
+      "Federal Republic of Germany"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 24,
+    "name": "Пруссия",
+    "aliases": [
+      "Prussia"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 25,
+    "name": "Бавария",
+    "aliases": [
+      "Bavaria"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 26,
+    "name": "Саксония",
+    "aliases": [
+      "Saxony"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 27,
+    "name": "Польша",
+    "aliases": [
+      "Poland"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 28,
+    "name": "Речь Посполитая",
+    "aliases": [
+      "Polish-Lithuanian Commonwealth",
+      "Commonwealth of Poland-Lithuania"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 29,
+    "name": "Великое Княжество Литовское",
+    "aliases": [
+      "ВКЛ",
+      "Grand Duchy of Lithuania",
+      "Lithuania, Grand Duchy of",
+      "Grand Duchy Lithuania"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 30,
+    "name": "Литва",
+    "aliases": [
+      "Lithuania",
+      "Литва"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 31,
+    "name": "Латвия",
+    "aliases": [
+      "Latvia"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 32,
+    "name": "Эстония",
+    "aliases": [
+      "Estonia"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 33,
+    "name": "Россия",
+    "aliases": [
+      "Russia",
+      "Russian Federation"
+    ],
+    "type": "modern",
+    "region": "Europe/Asia"
+  },
+  {
+    "id": 34,
+    "name": "Российская империя",
+    "aliases": [
+      "Russian Empire"
+    ],
+    "type": "historical",
+    "region": "Europe/Asia"
+  },
+  {
+    "id": 35,
+    "name": "РСФСР",
+    "aliases": [
+      "RSFSR",
+      "Russian SFSR"
+    ],
+    "type": "historical",
+    "region": "Europe/Asia"
+  },
+  {
+    "id": 36,
+    "name": "СССР",
+    "aliases": [
+      "USSR",
+      "Soviet Union",
+      "Союз ССР"
+    ],
+    "type": "historical",
+    "region": "Europe/Asia"
+  },
+  {
+    "id": 37,
+    "name": "Украина",
+    "aliases": [
+      "Ukraine"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 38,
+    "name": "Молдова",
+    "aliases": [
+      "Moldova"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 39,
+    "name": "Румыния",
+    "aliases": [
+      "Romania"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 40,
+    "name": "Венгрия",
+    "aliases": [
+      "Hungary"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 41,
+    "name": "Чехия",
+    "aliases": [
+      "Czechia",
+      "Czech Republic"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 42,
+    "name": "Чехословакия",
+    "aliases": [
+      "Czechoslovakia"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 43,
+    "name": "Словакия",
+    "aliases": [
+      "Slovakia"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 44,
+    "name": "Югославия",
+    "aliases": [
+      "Yugoslavia"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 45,
+    "name": "Сербия",
+    "aliases": [
+      "Serbia"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 46,
+    "name": "Хорватия",
+    "aliases": [
+      "Croatia"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 47,
+    "name": "Словения",
+    "aliases": [
+      "Slovenia"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 48,
+    "name": "Италия",
+    "aliases": [
+      "Italy"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 49,
+    "name": "Итальянское королевство",
+    "aliases": [
+      "Kingdom of Italy"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 50,
+    "name": "Венецианская республика",
+    "aliases": [
+      "Venice",
+      "Republic of Venice"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 51,
+    "name": "Папская область",
+    "aliases": [
+      "Papal States"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 52,
+    "name": "Ватикан",
+    "aliases": [
+      "Vatican City",
+      "Vatican"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 53,
+    "name": "Сан-Марино",
+    "aliases": [
+      "San Marino"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 54,
+    "name": "Испания",
+    "aliases": [
+      "Spain"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 55,
+    "name": "Португалия",
+    "aliases": [
+      "Portugal"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 56,
+    "name": "Нидерланды",
+    "aliases": [
+      "Netherlands",
+      "Holland"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 57,
+    "name": "Нидерландская Ост-Индия",
+    "aliases": [
+      "Netherlands East Indies",
+      "Dutch East Indies"
+    ],
+    "type": "historical",
+    "region": "Asia"
+  },
+  {
+    "id": 58,
+    "name": "Люксембург",
+    "aliases": [
+      "Luxembourg"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 59,
+    "name": "Швейцария",
+    "aliases": [
+      "Switzerland"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 60,
+    "name": "Швеция",
+    "aliases": [
+      "Sweden"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 61,
+    "name": "Норвегия",
+    "aliases": [
+      "Norway"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 62,
+    "name": "Дания",
+    "aliases": [
+      "Denmark"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 63,
+    "name": "Финляндия",
+    "aliases": [
+      "Finland"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 64,
+    "name": "Исландия",
+    "aliases": [
+      "Iceland"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 65,
+    "name": "Греция",
+    "aliases": [
+      "Greece"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 66,
+    "name": "Османская империя",
+    "aliases": [
+      "Ottoman Empire"
+    ],
+    "type": "historical",
+    "region": "Europe/Asia"
+  },
+  {
+    "id": 67,
+    "name": "Турция",
+    "aliases": [
+      "Turkey",
+      "Türkiye",
+      "Турция"
+    ],
+    "type": "modern",
+    "region": "Europe/Asia"
+  },
+  {
+    "id": 68,
+    "name": "Китай",
+    "aliases": [
+      "China",
+      "People's Republic of China"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 69,
+    "name": "Китайская Республика",
+    "aliases": [
+      "Republic of China"
+    ],
+    "type": "historical",
+    "region": "Asia"
+  },
+  {
+    "id": 70,
+    "name": "Япония",
+    "aliases": [
+      "Japan"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 71,
+    "name": "Корея",
+    "aliases": [
+      "Korea"
+    ],
+    "type": "historical",
+    "region": "Asia"
+  },
+  {
+    "id": 72,
+    "name": "Южная Корея",
+    "aliases": [
+      "South Korea",
+      "Republic of Korea"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 73,
+    "name": "КНДР",
+    "aliases": [
+      "North Korea",
+      "DPRK"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 74,
+    "name": "Индия",
+    "aliases": [
+      "India"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 75,
+    "name": "Британская Индия",
+    "aliases": [
+      "British India"
+    ],
+    "type": "historical",
+    "region": "Asia"
+  },
+  {
+    "id": 76,
+    "name": "Иран",
+    "aliases": [
+      "Iran",
+      "Persia"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 77,
+    "name": "Израиль",
+    "aliases": [
+      "Israel"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 78,
+    "name": "Казахстан",
+    "aliases": [
+      "Kazakhstan"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 79,
+    "name": "Грузия",
+    "aliases": [
+      "Georgia"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 80,
+    "name": "Армения",
+    "aliases": [
+      "Armenia"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 81,
+    "name": "Азербайджан",
+    "aliases": [
+      "Azerbaijan"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 82,
+    "name": "Египет",
+    "aliases": [
+      "Egypt"
+    ],
+    "type": "modern",
+    "region": "Africa"
+  },
+  {
+    "id": 83,
+    "name": "ЮАР",
+    "aliases": [
+      "South Africa"
+    ],
+    "type": "modern",
+    "region": "Africa"
+  },
+  {
+    "id": 84,
+    "name": "Эритрея",
+    "aliases": [
+      "Eritrea"
+    ],
+    "type": "modern",
+    "region": "Africa"
+  },
+  {
+    "id": 85,
+    "name": "Марокко",
+    "aliases": [
+      "Morocco"
+    ],
+    "type": "modern",
+    "region": "Africa"
+  },
+  {
+    "id": 86,
+    "name": "Тунис",
+    "aliases": [
+      "Tunisia"
+    ],
+    "type": "modern",
+    "region": "Africa"
+  },
+  {
+    "id": 87,
+    "name": "Новая Зеландия",
+    "aliases": [
+      "New Zealand"
+    ],
+    "type": "modern",
+    "region": "Oceania"
+  },
+  {
+    "id": 88,
+    "name": "Остров Мэн",
+    "aliases": [
+      "Isle of Man",
+      "Isle of Man"
+    ],
+    "type": "territory",
+    "region": "Europe"
+  },
+  {
+    "id": 89,
+    "name": "Джерси",
+    "aliases": [
+      "Jersey"
+    ],
+    "type": "territory",
+    "region": "Europe"
+  },
+  {
+    "id": 90,
+    "name": "Гернси",
+    "aliases": [
+      "Guernsey"
+    ],
+    "type": "territory",
+    "region": "Europe"
+  },
+  {
+    "id": 91,
+    "name": "Гибралтар",
+    "aliases": [
+      "Gibraltar"
+    ],
+    "type": "territory",
+    "region": "Europe"
+  },
+  {
+    "id": 92,
+    "name": "Острова Кука",
+    "aliases": [
+      "Cook Islands"
+    ],
+    "type": "territory",
+    "region": "Oceania"
+  },
+  {
+    "id": 93,
+    "name": "Ниуэ",
+    "aliases": [
+      "Niue"
+    ],
+    "type": "territory",
+    "region": "Oceania"
+  },
+  {
+    "id": 94,
+    "name": "Фиджи",
+    "aliases": [
+      "Fiji"
+    ],
+    "type": "modern",
+    "region": "Oceania"
+  },
+  {
+    "id": 95,
+    "name": "Самоа",
+    "aliases": [
+      "Samoa"
+    ],
+    "type": "modern",
+    "region": "Oceania"
+  },
+  {
+    "id": 96,
+    "name": "Новая Каледония",
+    "aliases": [
+      "New Caledonia",
+      "Новая Каледония"
+    ],
+    "type": "territory",
+    "region": "Oceania"
+  },
+  {
+    "id": 97,
+    "name": "Французская Полинезия",
+    "aliases": [
+      "French Polynesia"
+    ],
+    "type": "territory",
+    "region": "Oceania"
+  },
+  {
+    "id": 98,
+    "name": "Кипр",
+    "aliases": [
+      "Cyprus"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 99,
+    "name": "Мальта",
+    "aliases": [
+      "Malta"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 100,
+    "name": "Монако",
+    "aliases": [
+      "Monaco"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 101,
+    "name": "Андорра",
+    "aliases": [
+      "Andorra"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 102,
+    "name": "Лихтенштейн",
+    "aliases": [
+      "Liechtenstein"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 103,
+    "name": "Албания",
+    "aliases": [
+      "Albania"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 104,
+    "name": "Северная Македония",
+    "aliases": [
+      "North Macedonia",
+      "Macedonia"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 105,
+    "name": "Босния и Герцеговина",
+    "aliases": [
+      "Bosnia and Herzegovina"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 106,
+    "name": "Черногория",
+    "aliases": [
+      "Montenegro"
+    ],
+    "type": "modern",
+    "region": "Europe"
+  },
+  {
+    "id": 107,
+    "name": "Мексиканская империя",
+    "aliases": [
+      "Mexican Empire"
+    ],
+    "type": "historical",
+    "region": "North America"
+  },
+  {
+    "id": 108,
+    "name": "Аргентина",
+    "aliases": [
+      "Argentina"
+    ],
+    "type": "modern",
+    "region": "South America"
+  },
+  {
+    "id": 109,
+    "name": "Чили",
+    "aliases": [
+      "Chile"
+    ],
+    "type": "modern",
+    "region": "South America"
+  },
+  {
+    "id": 110,
+    "name": "Перу",
+    "aliases": [
+      "Peru"
+    ],
+    "type": "modern",
+    "region": "South America"
+  },
+  {
+    "id": 111,
+    "name": "Боливия",
+    "aliases": [
+      "Bolivia"
+    ],
+    "type": "modern",
+    "region": "South America"
+  },
+  {
+    "id": 112,
+    "name": "Колумбия",
+    "aliases": [
+      "Colombia"
+    ],
+    "type": "modern",
+    "region": "South America"
+  },
+  {
+    "id": 113,
+    "name": "Куба",
+    "aliases": [
+      "Cuba"
+    ],
+    "type": "modern",
+    "region": "North America"
+  },
+  {
+    "id": 114,
+    "name": "Багамские Острова",
+    "aliases": [
+      "Bahamas"
+    ],
+    "type": "modern",
+    "region": "North America"
+  },
+  {
+    "id": 115,
+    "name": "Барбадос",
+    "aliases": [
+      "Barbados"
+    ],
+    "type": "modern",
+    "region": "North America"
+  },
+  {
+    "id": 116,
+    "name": "Ямайка",
+    "aliases": [
+      "Jamaica"
+    ],
+    "type": "modern",
+    "region": "North America"
+  },
+  {
+    "id": 117,
+    "name": "Гонконг",
+    "aliases": [
+      "Hong Kong"
+    ],
+    "type": "territory",
+    "region": "Asia"
+  },
+  {
+    "id": 118,
+    "name": "Макао",
+    "aliases": [
+      "Macau",
+      "Macao"
+    ],
+    "type": "territory",
+    "region": "Asia"
+  },
+  {
+    "id": 119,
+    "name": "Таиланд",
+    "aliases": [
+      "Thailand",
+      "Siam"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 120,
+    "name": "Вьетнам",
+    "aliases": [
+      "Vietnam"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 121,
+    "name": "Индонезия",
+    "aliases": [
+      "Indonesia"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 122,
+    "name": "Филиппины",
+    "aliases": [
+      "Philippines"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 123,
+    "name": "Малайзия",
+    "aliases": [
+      "Malaysia"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 124,
+    "name": "Сингапур",
+    "aliases": [
+      "Singapore"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 125,
+    "name": "Монголия",
+    "aliases": [
+      "Mongolia"
+    ],
+    "type": "modern",
+    "region": "Asia"
+  },
+  {
+    "id": 126,
+    "name": "Византийская империя",
+    "aliases": [
+      "Byzantine Empire"
+    ],
+    "type": "historical",
+    "region": "Europe/Asia"
+  },
+  {
+    "id": 127,
+    "name": "Римская империя",
+    "aliases": [
+      "Roman Empire"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 128,
+    "name": "Древняя Греция",
+    "aliases": [
+      "Ancient Greece"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 129,
+    "name": "Великое княжество Финляндское",
+    "aliases": [
+      "Grand Duchy of Finland"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  },
+  {
+    "id": 130,
+    "name": "Тевтонский орден",
+    "aliases": [
+      "Teutonic Order"
+    ],
+    "type": "historical",
+    "region": "Europe"
+  }
+]
