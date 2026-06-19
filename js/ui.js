@@ -301,7 +301,10 @@
     }
 
     if (settings.backupCreated) {
-      return (baseMessage || 'Файл сохранен.') + ' Backup создан автоматически.';
+      const removedCount = Array.isArray(settings.removedBackups) ? settings.removedBackups.length : 0;
+      const limitText = settings.backupLimit ? ' Хранится до ' + settings.backupLimit + ' последних backup.' : '';
+      const cleanupText = removedCount ? ' Удалено старых backup: ' + removedCount + '.' : '';
+      return (baseMessage || 'Файл сохранен.') + ' Backup создан автоматически.' + limitText + cleanupText;
     }
 
     if (settings.backupError) {

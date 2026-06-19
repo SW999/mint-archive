@@ -30,6 +30,9 @@
     'storageLocation'
   ];
   const COIN_FIELDS = COIN_REQUIRED_FIELDS.concat(COIN_OPTIONAL_FIELDS);
+  const MONEY_FIELDS = ['purchasePrice', 'currentValue'];
+  const MULTILINE_FIELDS = ['comment'];
+
 
   const CATALOG_SCHEMA = {
     version: 'number',
@@ -50,6 +53,51 @@
   function normalizeValue(value) {
     if (value === null || value === undefined) return '';
     return String(value);
+  }
+
+  function stripUnsafeControlChars(value, options) {
+    const settings = Object.assign({ multiline: false }, options || {});
+    const normalized = normalizeValue(value)
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/\u00a0/g, ' ');
+
+    const cleaned = settings.multiline
+      ? normalized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      : normalized.replace(/[\x00-\x1F\x7F]/g, ' ');
+
+    return settings.multiline
+      ? cleaned.split('\n').map(function (line) { return line.trim(); }).join('\n').trim()
+      : cleaned.replace(/\s+/g, ' ').trim();
+  }
+
+  function normalizeDecimalText(value) {
+    const raw = stripUnsafeControlChars(value);
+    if (!raw) return '';
+
+    const sign = raw.trim().charAt(0) === '-' ? '-' : '';
+    const numeric = raw.replace(/[^0-9,.]/g, '');
+    if (!numeric) return '';
+
+    const lastComma = numeric.lastIndexOf(',');
+    const lastDot = numeric.lastIndexOf('.');
+    const decimalIndex = Math.max(lastComma, lastDot);
+
+    if (decimalIndex < 0) {
+      return sign + numeric.replace(/[^0-9]/g, '');
+    }
+
+    const integerPart = numeric.slice(0, decimalIndex).replace(/[^0-9]/g, '');
+    const decimalPart = numeric.slice(decimalIndex + 1).replace(/[^0-9]/g, '');
+
+    if (!integerPart && !decimalPart) return '';
+    if (!decimalPart) return sign + (integerPart || '0');
+    return sign + (integerPart || '0') + '.' + decimalPart;
+  }
+
+  function normalizeCoinField(field, value) {
+    if (MONEY_FIELDS.includes(field)) return normalizeDecimalText(value);
+    return stripUnsafeControlChars(value, { multiline: MULTILINE_FIELDS.includes(field) });
   }
 
   function normalizeStringArray(value) {
@@ -80,7 +128,7 @@
     const coin = {};
 
     COIN_FIELDS.forEach(function (field) {
-      coin[field] = normalizeValue(source[field]);
+      coin[field] = normalizeCoinField(field, source[field]);
     });
 
     if (!coin.id) {
@@ -88,8 +136,8 @@
     }
 
     coin.photos = {
-      obverse: normalizeValue(source.photos && source.photos.obverse),
-      reverse: normalizeValue(source.photos && source.photos.reverse)
+      obverse: stripUnsafeControlChars(source.photos && source.photos.obverse),
+      reverse: stripUnsafeControlChars(source.photos && source.photos.reverse)
     };
     coin.seriesIds = normalizeStringArray(source.seriesIds);
 
@@ -101,7 +149,7 @@
     const coin = { id: source.id };
 
     COIN_OPTIONAL_FIELDS.forEach(function (field) {
-      const value = normalizeValue(source[field]).trim();
+      const value = normalizeCoinField(field, source[field]);
       if (value) coin[field] = value;
     });
 
@@ -335,6 +383,8 @@
     COIN_FIELDS: COIN_FIELDS,
     emptyCatalog: emptyCatalog,
     normalizeCoin: normalizeCoin,
+    normalizeCoinField: normalizeCoinField,
+    normalizeDecimalText: normalizeDecimalText,
     compactCoin: compactCoin,
     normalizeCatalog: normalizeCatalog,
     compactCatalog: compactCatalog,

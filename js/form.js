@@ -108,7 +108,7 @@
       inputShell.appendChild(input);
       inputShell.appendChild(AppUI.createElement('span', 'field-suffix', '€'));
       wrapper.appendChild(inputShell);
-      wrapper.appendChild(AppUI.createElement('p', 'small-note', 'В JSON значение хранится как введено; пересчет валют выполняется только на экране.'));
+      wrapper.appendChild(AppUI.createElement('p', 'small-note', 'Символы валюты при сохранении удаляются; пересчет валют выполняется только на экране.'));
       return wrapper;
     }
 
@@ -253,7 +253,39 @@
     return coin[field];
   }
 
-  function readFormCoin() {
+  function normalizeFormValue(field, value) {
+    return CoinDB.normalizeCoinField(field, value);
+  }
+
+  function validateCoinForm(coin) {
+    const errors = [];
+
+    ['purchasePrice', 'currentValue'].forEach(function (field) {
+      const value = String(coin[field] || '').trim();
+      if (!value) return;
+      if (!/^\d+(\.\d+)?$/.test(value)) {
+        errors.push(AppUI.getFieldLabel(field) + ': укажи число без символа валюты. Можно использовать запятую или точку.');
+      }
+    });
+
+    const year = String(coin.year || '').trim();
+    if (year && !/^\d{1,4}([\-–—]\d{1,4})?$/.test(year)) {
+      errors.push('Год: укажи год числом или диапазоном, например 1553 или 1553-1555.');
+    }
+
+    const invalidPhotoPath = [coin.photos && coin.photos.obverse, coin.photos && coin.photos.reverse].find(function (path) {
+      return String(path || '').split(/[\\/]+/).includes('..');
+    });
+    if (invalidPhotoPath) {
+      errors.push('Фото: путь не должен содержать "..". Используй относительный путь внутри папки каталога.');
+    }
+
+    if (errors.length) {
+      throw new Error(errors.join('\n'));
+    }
+  }
+
+  function readFormCoin(options) {
     const form = AppUI.byId('coinForm');
     const formData = new FormData(form);
     const coin = CoinDB.normalizeCoin(originalCoin || { id: formData.get('id') || CoinDB.generateId() });
@@ -262,18 +294,19 @@
       if (field === 'id') return;
       if (!formData.has(field)) return;
       const value = formData.get(field);
-      coin[field] = value === null ? '' : String(value).trim();
+      coin[field] = normalizeFormValue(field, value);
     });
 
     coin.id = originalCoin ? originalCoin.id : (coin.id || CoinDB.generateId());
     coin.photos = {
-      obverse: String(formData.get('photos.obverse') || '').trim(),
-      reverse: String(formData.get('photos.reverse') || '').trim()
+      obverse: normalizeFormValue('photos.obverse', formData.get('photos.obverse')),
+      reverse: normalizeFormValue('photos.reverse', formData.get('photos.reverse'))
     };
     coin.seriesIds = Array.from(form.querySelectorAll('[name="seriesIds"]:checked')).map(function (input) {
       return input.value;
     });
 
+    if (!options || options.validate !== false) validateCoinForm(coin);
     return coin;
   }
 
@@ -317,7 +350,7 @@
       await AppDrafts.saveDraft(draftKey, {
         mode: mode,
         coinId: originalCoin && originalCoin.id,
-        coin: readFormCoin(),
+        coin: readFormCoin({ validate: false }),
         series: seriesList
       });
     } catch (error) {
