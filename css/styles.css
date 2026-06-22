@@ -451,14 +451,14 @@ textarea.field {
 
 .form-layout {
   display: grid;
-  gap: 14px;
+  gap: 24px;
 }
 
 .form-section {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 18px;
   box-shadow: var(--shadow);
 }
 
@@ -934,7 +934,7 @@ textarea.field {
   }
 
   .form-layout {
-    gap: 18px;
+    gap: 24px;
   }
 }
 

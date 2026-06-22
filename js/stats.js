@@ -27,17 +27,30 @@
   function renderSummary(coins) {
     const purchaseCoins = coins.filter(function (coin) { return parseMoney(coin.purchasePrice) > 0; });
     const totalEuro = AppCurrency.sumEuroPrices(coins, 'purchasePrice');
-    const averageEuro = purchaseCoins.length ? totalEuro / purchaseCoins.length : 0;
+    const medianEuro = medianPurchasePrice(purchaseCoins);
     const currency = AppCurrency.getSelectedCurrency();
     const totalConverted = AppCurrency.convertFromEuro(totalEuro, currency);
-    const averageConverted = AppCurrency.convertFromEuro(averageEuro, currency);
+    const medianConverted = AppCurrency.convertFromEuro(medianEuro, currency);
 
     AppUI.setText(AppUI.byId('statsTotalCoins'), String(coins.length));
     AppUI.setText(AppUI.byId('statsPurchaseTotal'), formatConverted(totalConverted, totalEuro, currency));
-    AppUI.setText(AppUI.byId('statsAveragePrice'), purchaseCoins.length ? formatConverted(averageConverted, averageEuro, currency) : '—');
+    AppUI.setText(AppUI.byId('statsMedianPrice'), medianEuro > 0 ? formatConverted(medianConverted, medianEuro, currency) : '—');
     AppUI.setText(AppUI.byId('statsIssuerCount'), String(AppIssuers.uniqueUsedCount(coins)));
     AppUI.setText(AppUI.byId('statsSlabCount'), String(coins.filter(hasSlab).length));
     AppUI.setText(AppUI.byId('statsSubtitle'), coins.length ? 'Монет в каталоге: ' + coins.length : 'Открой coins.json, чтобы увидеть статистику.');
+  }
+
+
+  function medianPurchasePrice(coins) {
+    const values = coins.map(function (coin) { return parseMoney(coin.purchasePrice); })
+      .filter(function (value) { return value > 0; })
+      .sort(function (a, b) { return a - b; });
+
+    if (!values.length) return 0;
+
+    const middle = Math.floor(values.length / 2);
+    if (values.length % 2) return values[middle];
+    return (values[middle - 1] + values[middle]) / 2;
   }
 
   function renderCharts(coins) {
