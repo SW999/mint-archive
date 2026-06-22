@@ -22,6 +22,9 @@
     purchasePrice: 'Цена покупки',
     source: 'Источник',
     currentValue: 'Текущая оценка',
+    slabCompany: 'Грейдинговая компания',
+    slabNumber: 'Номер слаба',
+    slabUrl: 'Ссылка на страницу грейдера',
     status: 'Статус',
     series: 'Серия',
     comment: 'Комментарий',
@@ -51,6 +54,10 @@
     {
       title: 'Каталог',
       fields: ['catalogNumber']
+    },
+    {
+      title: 'Грейдинг',
+      fields: ['slabCompany', 'slabNumber', 'slabUrl']
     },
     {
       title: 'Покупка и оценка',

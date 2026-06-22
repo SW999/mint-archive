@@ -1,9 +1,10 @@
-const CACHE_NAME = 'coins-pwa-v10';
+const CACHE_NAME = 'coins-pwa-v11';
 const APP_SHELL = [
   './',
   './index.html',
   './coin.html',
   './form.html',
+  './stats.html',
   './manifest.json',
   './data/issuers.json',
   './css/styles.css',
@@ -17,6 +18,7 @@ const APP_SHELL = [
   './js/list.js',
   './js/detail.js',
   './js/form.js',
+  './js/stats.js',
   './images/icon.svg',
   './images/placeholder-obverse.svg',
   './images/placeholder-reverse.svg'

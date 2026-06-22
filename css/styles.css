@@ -741,6 +741,82 @@ textarea.field {
   font-weight: 750;
 }
 
+
+.data-link {
+  color: var(--accent-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.stats--wide {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.chart-card {
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.chart-card__title {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.bar-chart {
+  display: grid;
+  gap: 12px;
+}
+
+.bar-chart__row {
+  display: grid;
+  gap: 5px;
+}
+
+.bar-chart__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.bar-chart__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 650;
+}
+
+.bar-chart__value {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.bar-chart__track {
+  height: 10px;
+  overflow: hidden;
+  background: #f1eee7;
+  border-radius: 999px;
+}
+
+.bar-chart__fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -812,6 +888,11 @@ textarea.field {
 
   .stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats--wide,
+  .charts-grid {
+    grid-template-columns: 1fr;
   }
 
   .detail-layout {

@@ -116,6 +116,8 @@
       ['Состояние', coin.condition]
     ]));
 
+    appendGradingSection(content, coin);
+
     appendSection(content, 'Покупка и оценка', compactRows([
       ['Дата приобретения', coin.purchaseDate ? CoinDB.formatDate(coin.purchaseDate) : ''],
       ['Цена покупки', coin.purchasePrice ? formatPriceValue(coin.purchasePrice) : ''],
@@ -138,6 +140,38 @@
       commentSection.appendChild(comment);
       content.appendChild(commentSection);
     }
+  }
+
+  function appendGradingSection(content, coin) {
+    const rows = compactRows([
+      ['Грейдинговая компания', coin.slabCompany],
+      ['Номер слаба', coin.slabNumber]
+    ]);
+
+    const hasUrl = hasValue(coin.slabUrl) && CoinDB.isValidHttpUrl(coin.slabUrl);
+    if (!rows.length && !hasUrl) return;
+
+    const section = AppUI.createElement('section', 'section');
+    section.appendChild(AppUI.createElement('h2', 'section__title', 'Грейдинг'));
+    const grid = AppUI.createElement('div', 'data-grid');
+
+    rows.forEach(function (row) {
+      AppUI.appendDataItem(grid, row[0], row[1]);
+    });
+
+    if (hasUrl) {
+      const item = AppUI.createElement('div', 'data-item');
+      item.appendChild(AppUI.createElement('span', 'data-label', 'Страница у грейдера'));
+      const link = AppUI.createElement('a', 'data-value data-link', 'Открыть страницу');
+      link.href = coin.slabUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      item.appendChild(link);
+      grid.appendChild(item);
+    }
+
+    section.appendChild(grid);
+    content.appendChild(section);
   }
 
   function appendSeriesSection(content, coin) {

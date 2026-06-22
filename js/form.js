@@ -102,6 +102,11 @@
       input.type = 'text';
     }
 
+    if (field === 'slabUrl') {
+      input.inputMode = 'url';
+      input.placeholder = 'https://www.ngccoin.com/certlookup/...';
+    }
+
     if (field === 'nominal' || field === 'title') {
       input.autocapitalize = 'sentences';
     }
@@ -116,6 +121,11 @@
     }
 
     wrapper.appendChild(input);
+
+    if (field === 'slabUrl') {
+      wrapper.appendChild(AppUI.createElement('p', 'small-note', 'Можно вставить полный адрес или домен без https://. При сохранении ссылка будет нормализована.'));
+    }
+
     return wrapper;
   }
 
@@ -312,6 +322,10 @@
     const year = String(coin.year || '').trim();
     if (year && !/^\d{1,4}([\-–—]\d{1,4})?$/.test(year)) {
       errors.push('Год: укажи год числом или диапазоном, например 1553 или 1553-1555.');
+    }
+
+    if (coin.slabUrl && !CoinDB.isValidHttpUrl(coin.slabUrl)) {
+      errors.push('Ссылка на страницу грейдера: укажи корректную ссылку http:// или https://.');
     }
 
     const invalidPhotoPath = [coin.photos && coin.photos.obverse, coin.photos && coin.photos.reverse].find(function (path) {

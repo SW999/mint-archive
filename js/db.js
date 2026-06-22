@@ -28,7 +28,10 @@
     'currentValue',
     'status',
     'comment',
-    'storageLocation'
+    'storageLocation',
+    'slabCompany',
+    'slabNumber',
+    'slabUrl'
   ];
   const COIN_FIELDS = COIN_REQUIRED_FIELDS.concat(COIN_OPTIONAL_FIELDS);
   const MONEY_FIELDS = ['purchasePrice', 'currentValue'];
@@ -103,8 +106,35 @@
       const text = stripUnsafeControlChars(value);
       return /^\d+$/.test(text) ? text : '';
     }
+    if (field === 'slabUrl') return normalizeUrlText(value);
     return stripUnsafeControlChars(value, { multiline: MULTILINE_FIELDS.includes(field) });
   }
+
+  function normalizeUrlText(value) {
+    const text = stripUnsafeControlChars(value);
+    if (!text) return '';
+    const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : (text.includes('.') && !/\s/.test(text) ? 'https://' + text : text);
+    try {
+      const url = new URL(candidate);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return candidate;
+      if (!url.hostname) return candidate;
+      return url.href;
+    } catch (error) {
+      return candidate;
+    }
+  }
+
+  function isValidHttpUrl(value) {
+    const text = normalizeValue(value).trim();
+    if (!text) return false;
+    try {
+      const url = new URL(text);
+      return (url.protocol === 'http:' || url.protocol === 'https:') && Boolean(url.hostname);
+    } catch (error) {
+      return false;
+    }
+  }
+
 
   function normalizeStringArray(value) {
     if (!Array.isArray(value)) return [];
@@ -407,6 +437,8 @@
     normalizeCoin: normalizeCoin,
     normalizeCoinField: normalizeCoinField,
     normalizeDecimalText: normalizeDecimalText,
+    normalizeUrlText: normalizeUrlText,
+    isValidHttpUrl: isValidHttpUrl,
     compactCoin: compactCoin,
     normalizeCatalog: normalizeCatalog,
     compactCatalog: compactCatalog,
