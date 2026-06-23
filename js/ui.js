@@ -110,30 +110,10 @@
     return kind === 'reverse' ? 'images/placeholder-reverse.svg' : 'images/placeholder-obverse.svg';
   }
 
-  const IMAGE_LOAD_CONCURRENCY = 3;
-  let imageObserver = null;
+  const IMAGE_LOAD_CONCURRENCY = 2;
   let imageQueue = [];
   let activeImageLoads = 0;
   let imageLoadSeq = 0;
-
-  function getImageObserver() {
-    if (!('IntersectionObserver' in window)) return null;
-    if (imageObserver) return imageObserver;
-
-    imageObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        imageObserver.unobserve(entry.target);
-        enqueueImageLoad(entry.target);
-      });
-    }, {
-      root: null,
-      rootMargin: '220px 0px',
-      threshold: 0.01
-    });
-
-    return imageObserver;
-  }
 
   function setImageFallback(image, fallback) {
     image.onerror = function () {
@@ -190,7 +170,7 @@
   function setCoinImage(image, path, kind, options) {
     if (!image) return;
 
-    const settings = Object.assign({ lazy: true }, options || {});
+    const settings = Object.assign({ lazy: false }, options || {});
     const fallback = placeholder(kind);
     const normalizedPath = String(path || '').trim();
     const token = String(++imageLoadSeq);
@@ -211,12 +191,114 @@
       return;
     }
 
-    const observer = settings.lazy ? getImageObserver() : null;
-    if (observer) {
-      observer.observe(image);
-    } else {
-      enqueueImageLoad(image);
+    enqueueImageLoad(image);
+  }
+
+  function normalizePhotoError(error, path) {
+    const code = error && error.code ? error.code : 'load-error';
+    const messages = {
+      'empty-path': 'Путь к фото не указан',
+      'missing-directory': 'Папка каталога не открыта',
+      'no-permission': 'Нет доступа к папке',
+      'not-found': 'Файл не найден',
+      'read-error': 'Ошибка чтения файла',
+      'decode-error': 'Ошибка загрузки изображения',
+      'load-error': 'Ошибка загрузки'
+    };
+
+    return {
+      ok: false,
+      code: code,
+      path: path || (error && error.path) || '',
+      message: messages[code] || (error && error.message) || messages['load-error']
+    };
+  }
+
+  function createLoadedImage(src, alt) {
+    return new Promise(function (resolve, reject) {
+      const image = document.createElement('img');
+      image.className = 'coin-card__image';
+      image.alt = alt || '';
+      image.decoding = 'async';
+      image.loading = 'eager';
+      image.onload = function () { resolve(image); };
+      image.onerror = function () {
+        const error = new Error('Изображение не декодировано браузером.');
+        error.code = 'decode-error';
+        reject(error);
+      };
+      image.src = src;
+    });
+  }
+
+  async function loadCoinImageFrame(frame) {
+    if (!frame || !frame.isConnected) return { ok: false, code: 'detached', path: '', message: 'Карточка уже удалена' };
+
+    const path = String(frame.dataset.photoPath || '').trim();
+    const kind = frame.dataset.photoKind || 'obverse';
+    const token = frame.dataset.imageToken || '';
+    const alt = frame.dataset.photoAlt || '';
+
+    frame.classList.add('is-loading');
+    frame.classList.remove('has-image');
+    frame.classList.remove('has-error');
+    frame.textContent = '';
+    frame.style.backgroundImage = 'url("' + placeholder(kind) + '")';
+
+    if (!path) {
+      frame.classList.remove('is-loading');
+      return normalizePhotoError({ code: 'empty-path' }, path);
     }
+
+    try {
+      const result = await AppFileSystem.loadImageObjectUrlDetailed(path);
+      if (!frame.isConnected || frame.dataset.imageToken !== token) return { ok: false, code: 'detached', path: path, message: 'Карточка уже обновлена' };
+      const image = await createLoadedImage(result.url, alt);
+      if (!frame.isConnected || frame.dataset.imageToken !== token) return { ok: false, code: 'detached', path: path, message: 'Карточка уже обновлена' };
+      frame.textContent = '';
+      frame.style.backgroundImage = '';
+      frame.appendChild(image);
+      frame.classList.add('has-image');
+      return { ok: true, path: path, cached: Boolean(result.cached) };
+    } catch (error) {
+      const normalized = normalizePhotoError(error, path);
+      if (frame.isConnected && frame.dataset.imageToken === token) {
+        frame.classList.add('has-error');
+        frame.dataset.photoError = normalized.message;
+        const label = createElement('span', 'coin-card__image-error', normalized.message);
+        frame.textContent = '';
+        frame.appendChild(label);
+      }
+      return normalized;
+    } finally {
+      if (frame.isConnected && frame.dataset.imageToken === token) {
+        frame.classList.remove('is-loading');
+      }
+    }
+  }
+
+  async function loadCoinImageFramesBatch(frames, options) {
+    const settings = Object.assign({ concurrency: 2 }, options || {});
+    const pending = Array.from(frames || []).filter(Boolean);
+    const results = [];
+    let cursor = 0;
+
+    async function worker() {
+      while (cursor < pending.length) {
+        const index = cursor;
+        cursor += 1;
+        results[index] = await loadCoinImageFrame(pending[index]);
+      }
+    }
+
+    const workers = [];
+    const count = Math.max(1, Math.min(settings.concurrency, pending.length || 1));
+    for (let index = 0; index < count; index += 1) {
+      workers.push(worker());
+    }
+
+    await Promise.allSettled(workers);
+    return results;
   }
 
   function cleanupImageObjectUrls() {
@@ -407,6 +489,8 @@
     setText: setText,
     setStatus: setStatus,
     setCoinImage: setCoinImage,
+    loadCoinImageFrame: loadCoinImageFrame,
+    loadCoinImageFramesBatch: loadCoinImageFramesBatch,
     cleanupImageObjectUrls: cleanupImageObjectUrls,
     createElement: createElement,
     createChip: createChip,

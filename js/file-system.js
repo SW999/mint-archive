@@ -5,12 +5,9 @@
   const STORE_NAME = 'handles';
   const FILE_HANDLE_KEY = 'catalogFile';
   const DIRECTORY_HANDLE_KEY = 'catalogDirectory';
+  const IMAGE_OBJECT_URL_CACHE_LIMIT = 120;
   const imageObjectUrlCache = new Map();
   const imageObjectUrlPromises = new Map();
-  const BACKUP_LIMIT = 5;
-  const BACKUP_PREFIX = 'coins_backup_';
-  const BACKUP_SUFFIX = '.json';
-
 
   function isSupported() {
     return Boolean(window.showOpenFilePicker && window.showSaveFilePicker && window.indexedDB && window.isSecureContext);
@@ -164,62 +161,27 @@
       pad(now.getSeconds());
   }
 
-  function isCatalogBackupName(name) {
-    return String(name || '').startsWith(BACKUP_PREFIX) && String(name || '').endsWith(BACKUP_SUFFIX);
-  }
-
-  async function pruneOldBackups(backupsHandle, keepLimit) {
-    const backups = [];
-
-    for await (const entry of backupsHandle.entries()) {
-      const name = entry[0];
-      const handle = entry[1];
-      if (handle && handle.kind === 'file' && isCatalogBackupName(name)) {
-        backups.push(name);
-      }
-    }
-
-    backups.sort(function (a, b) { return b.localeCompare(a); });
-    const toRemove = backups.slice(keepLimit);
-    const removed = [];
-
-    for (const name of toRemove) {
-      try {
-        await backupsHandle.removeEntry(name);
-        removed.push(name);
-      } catch (error) {
-        console.warn('Cannot remove old backup', name, error);
-      }
-    }
-
-    return removed;
-  }
-
   async function saveBackupToDirectory(directoryHandle, previousText) {
     if (!previousText) return null;
     const backupsHandle = await directoryHandle.getDirectoryHandle('backups', { create: true });
-    const backupName = BACKUP_PREFIX + timestamp() + BACKUP_SUFFIX;
+    const backupName = 'coins_backup_' + timestamp() + '.json';
     const backupFileHandle = await backupsHandle.getFileHandle(backupName, { create: true });
     await writeTextToFileHandle(backupFileHandle, previousText);
-    const removedBackups = await pruneOldBackups(backupsHandle, BACKUP_LIMIT);
-    return {
-      name: backupName,
-      removedBackups: removedBackups
-    };
+    return backupName;
   }
 
   async function saveCatalog(catalog) {
-    const text = CoinDB.stringifyCatalog(catalog);
+    const text = JSON.stringify(CoinDB.normalizeCatalog(catalog), null, 2);
     const previousText = CoinDB.getLastSavedText();
 
     const directoryHandle = await getStoredHandle(DIRECTORY_HANDLE_KEY);
     if (directoryHandle && await verifyPermission(directoryHandle, 'readwrite')) {
       const fileHandle = await directoryHandle.getFileHandle('coins.json', { create: true });
-      let backupInfo = null;
+      let backupName = null;
       let backupError = null;
 
       try {
-        backupInfo = await saveBackupToDirectory(directoryHandle, previousText);
+        backupName = await saveBackupToDirectory(directoryHandle, previousText);
       } catch (error) {
         backupError = error;
       }
@@ -228,10 +190,8 @@
       return {
         saved: true,
         mode: 'directory',
-        backupCreated: Boolean(backupInfo && backupInfo.name),
-        backupName: backupInfo && backupInfo.name,
-        removedBackups: backupInfo && backupInfo.removedBackups || [],
-        backupLimit: BACKUP_LIMIT,
+        backupCreated: Boolean(backupName),
+        backupName: backupName,
         backupError: backupError
       };
     }
@@ -266,7 +226,7 @@
   }
 
   function downloadCatalog(catalog, fileName) {
-    downloadText(CoinDB.stringifyCatalog(catalog), fileName || 'coins.json');
+    downloadText(JSON.stringify(CoinDB.normalizeCatalog(catalog), null, 2), fileName || 'coins.json');
   }
 
 
@@ -362,10 +322,10 @@
     saveCatalog: saveCatalog,
     downloadCatalog: downloadCatalog,
     loadImageObjectUrl: loadImageObjectUrl,
+    loadImageObjectUrlDetailed: loadImageObjectUrlDetailed,
     revokeImageObjectUrls: revokeImageObjectUrls,
     loadPlainFileInput: loadPlainFileInput,
     clearStoredHandles: clearStoredHandles,
-    timestamp: timestamp,
-    backupLimit: BACKUP_LIMIT
+    timestamp: timestamp
   };
 })();

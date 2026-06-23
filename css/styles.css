@@ -290,6 +290,29 @@ textarea.field {
   border-color: #cfc3af;
 }
 
+.coin-card__image-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #eee;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  align-self: center;
+}
+
+.coin-card__image-frame.is-loading {
+  opacity: 0.72;
+}
+
+.coin-card__image-frame.has-error {
+  background-size: 58px 58px;
+}
+
 .coin-card__image {
   width: 88px;
   height: 88px;
@@ -297,6 +320,18 @@ textarea.field {
   object-fit: cover;
   background: #eee;
   align-self: center;
+}
+
+.coin-card__image-error {
+  display: block;
+  max-width: 72px;
+  padding: 2px 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
 }
 
 .coin-card__image.is-loading,
@@ -725,6 +760,37 @@ textarea.field {
   font-weight: 750;
 }
 
+.list-sentinel {
+  grid-column: 1 / -1;
+  min-height: 4px;
+}
+
+.photo-diagnostics {
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.photo-diagnostics__summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.photo-diagnostics__details {
+  margin-top: 8px;
+}
+
+.photo-diagnostics__list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .total-summary {
   display: flex;
   justify-content: flex-end;
@@ -998,9 +1064,15 @@ textarea.field {
     padding: 12px;
   }
 
+  .coin-card__image-frame,
   .coin-card__image {
     width: 72px;
     height: 72px;
+  }
+
+  .coin-card__image-error {
+    max-width: 58px;
+    font-size: 9px;
   }
 
   .filters,
@@ -1039,7 +1111,38 @@ textarea.field {
     width: 100%;
   }
 
-  .total-summary {
+  .list-sentinel {
+  grid-column: 1 / -1;
+  min-height: 4px;
+}
+
+.photo-diagnostics {
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.photo-diagnostics__summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.photo-diagnostics__details {
+  margin-top: 8px;
+}
+
+.photo-diagnostics__list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.total-summary {
     justify-content: flex-start;
     padding: 0 2px;
   }

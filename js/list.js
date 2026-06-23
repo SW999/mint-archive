@@ -4,6 +4,11 @@
   let catalog = null;
   let filteredCoins = [];
   let viewMode = localStorage.getItem('coinsPwa.viewMode') || 'cards';
+  const CARD_BATCH_SIZE = 10;
+  let renderedCardCount = 0;
+  let cardRenderToken = 0;
+  let sentinelObserver = null;
+  let photoDiagnostics = createEmptyPhotoDiagnostics();
 
   document.addEventListener('DOMContentLoaded', init);
 
@@ -237,6 +242,16 @@
 
   function renderCoins(coins) {
     const container = AppUI.byId('coinList');
+    cardRenderToken += 1;
+    renderedCardCount = 0;
+    photoDiagnostics = createEmptyPhotoDiagnostics();
+    updatePhotoDiagnostics();
+
+    if (sentinelObserver) {
+      sentinelObserver.disconnect();
+      sentinelObserver = null;
+    }
+
     container.innerHTML = '';
     container.className = viewMode === 'table' ? 'coin-table-container' : 'coin-grid';
 
@@ -252,19 +267,160 @@
       return;
     }
 
-    coins.forEach(function (coin) {
-      container.appendChild(createCoinCard(coin));
+    renderNextCardBatch(coins, cardRenderToken);
+  }
+
+  function renderNextCardBatch(coins, token) {
+    if (token !== cardRenderToken) return;
+
+    const container = AppUI.byId('coinList');
+    const existingSentinel = AppUI.byId('coinListSentinel');
+    if (existingSentinel) existingSentinel.remove();
+
+    const start = renderedCardCount;
+    const nextCoins = coins.slice(start, start + CARD_BATCH_SIZE);
+    const imageFrames = [];
+    const fragment = document.createDocumentFragment();
+
+    nextCoins.forEach(function (coin) {
+      const card = createCoinCard(coin);
+      const frame = card.querySelector('[data-role="coin-card-image"]');
+      if (frame) imageFrames.push(frame);
+      fragment.appendChild(card);
     });
+
+    renderedCardCount += nextCoins.length;
+    container.appendChild(fragment);
+
+    loadCardImageBatch(imageFrames, token);
+
+    if (renderedCardCount < coins.length) {
+      const sentinel = AppUI.createElement('div', 'list-sentinel');
+      sentinel.id = 'coinListSentinel';
+      sentinel.setAttribute('aria-hidden', 'true');
+      container.appendChild(sentinel);
+      observeListSentinel(sentinel, coins, token);
+    }
+  }
+
+  function observeListSentinel(sentinel, coins, token) {
+    if (!('IntersectionObserver' in window)) {
+      renderNextCardBatch(coins, token);
+      return;
+    }
+
+    sentinelObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        if (sentinelObserver) sentinelObserver.unobserve(entry.target);
+        renderNextCardBatch(coins, token);
+      });
+    }, {
+      root: null,
+      rootMargin: '180px 0px',
+      threshold: 0.01
+    });
+
+    sentinelObserver.observe(sentinel);
+  }
+
+  async function loadCardImageBatch(frames, token) {
+    if (!frames.length) return;
+
+    frames.forEach(function (frame) {
+      const path = frame.dataset.photoPath || '';
+      if (path) photoDiagnostics.requested += 1;
+      else photoDiagnostics.empty += 1;
+    });
+    updatePhotoDiagnostics();
+
+    const results = await AppUI.loadCoinImageFramesBatch(frames, { concurrency: 2 });
+    if (token !== cardRenderToken) return;
+
+    results.forEach(function (result) {
+      if (!result || result.code === 'detached') return;
+      if (result.ok) {
+        photoDiagnostics.loaded += 1;
+        if (result.cached) photoDiagnostics.cached += 1;
+        return;
+      }
+
+      if (result.code === 'empty-path') return;
+      photoDiagnostics.failed += 1;
+      photoDiagnostics.byCode[result.code] = (photoDiagnostics.byCode[result.code] || 0) + 1;
+      if (photoDiagnostics.samples.length < 10) {
+        photoDiagnostics.samples.push({ path: result.path || '', message: result.message || 'Ошибка загрузки' });
+      }
+    });
+
+    updatePhotoDiagnostics();
+  }
+
+  function createEmptyPhotoDiagnostics() {
+    return {
+      requested: 0,
+      loaded: 0,
+      failed: 0,
+      empty: 0,
+      cached: 0,
+      byCode: {},
+      samples: []
+    };
+  }
+
+  function updatePhotoDiagnostics() {
+    const panel = AppUI.byId('photoDiagnostics');
+    const summary = AppUI.byId('photoDiagnosticsSummary');
+    const details = AppUI.byId('photoDiagnosticsDetails');
+    if (!panel || !summary || !details) return;
+
+    const total = photoDiagnostics.requested;
+    const failed = photoDiagnostics.failed;
+    const loaded = photoDiagnostics.loaded;
+
+    panel.classList.toggle('hidden', total === 0 && photoDiagnostics.empty === 0);
+    summary.textContent = 'Фото: загружено ' + loaded + ' из ' + total + (failed ? ', ошибок: ' + failed : '');
+
+    const codeLabels = {
+      'missing-directory': 'папка не открыта',
+      'no-permission': 'нет доступа',
+      'not-found': 'файл не найден',
+      'read-error': 'ошибка чтения',
+      'decode-error': 'ошибка изображения',
+      'load-error': 'ошибка загрузки'
+    };
+
+    const parts = [];
+    Object.keys(photoDiagnostics.byCode).forEach(function (code) {
+      parts.push((codeLabels[code] || code) + ': ' + photoDiagnostics.byCode[code]);
+    });
+
+    if (photoDiagnostics.empty) parts.push('без пути к фото: ' + photoDiagnostics.empty);
+    if (photoDiagnostics.cached) parts.push('из session cache: ' + photoDiagnostics.cached);
+
+    details.innerHTML = '';
+    details.appendChild(AppUI.createElement('p', 'small-note', parts.length ? parts.join(' · ') : 'Ошибок загрузки пока нет.'));
+
+    if (photoDiagnostics.samples.length) {
+      const list = AppUI.createElement('ul', 'photo-diagnostics__list');
+      photoDiagnostics.samples.forEach(function (item) {
+        list.appendChild(AppUI.createElement('li', '', item.message + ': ' + item.path));
+      });
+      details.appendChild(list);
+    }
   }
 
   function createCoinCard(coin) {
     const link = AppUI.createElement('a', 'coin-card');
     link.href = 'coin.html?id=' + encodeURIComponent(coin.id);
 
-    const image = document.createElement('img');
-    image.className = 'coin-card__image';
-    image.alt = 'Аверс: ' + CoinDB.getDisplayTitle(coin);
-    AppUI.setCoinImage(image, coin.photos && coin.photos.obverse, 'obverse');
+    const image = AppUI.createElement('div', 'coin-card__image-frame');
+    image.dataset.role = 'coin-card-image';
+    image.dataset.photoPath = coin.photos && coin.photos.obverse ? coin.photos.obverse : '';
+    image.dataset.photoKind = 'obverse';
+    image.dataset.photoAlt = 'Аверс: ' + CoinDB.getDisplayTitle(coin);
+    image.dataset.imageToken = String(cardRenderToken);
+    image.style.backgroundImage = 'url("images/placeholder-obverse.svg")';
 
     const content = AppUI.createElement('div', 'coin-card__content');
     content.appendChild(AppUI.createElement('h2', 'coin-card__title', CoinDB.getDisplayTitle(coin)));
