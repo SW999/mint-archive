@@ -8,6 +8,10 @@
   const IMAGE_OBJECT_URL_CACHE_LIMIT = 120;
   const imageObjectUrlCache = new Map();
   const imageObjectUrlPromises = new Map();
+  const BACKUP_LIMIT = 5;
+  const BACKUP_PREFIX = 'coins_backup_';
+  const BACKUP_SUFFIX = '.json';
+
 
   function isSupported() {
     return Boolean(window.showOpenFilePicker && window.showSaveFilePicker && window.indexedDB && window.isSecureContext);
@@ -161,27 +165,62 @@
       pad(now.getSeconds());
   }
 
+  function isCatalogBackupName(name) {
+    return String(name || '').startsWith(BACKUP_PREFIX) && String(name || '').endsWith(BACKUP_SUFFIX);
+  }
+
+  async function pruneOldBackups(backupsHandle, keepLimit) {
+    const backups = [];
+
+    for await (const entry of backupsHandle.entries()) {
+      const name = entry[0];
+      const handle = entry[1];
+      if (handle && handle.kind === 'file' && isCatalogBackupName(name)) {
+        backups.push(name);
+      }
+    }
+
+    backups.sort(function (a, b) { return b.localeCompare(a); });
+    const toRemove = backups.slice(keepLimit);
+    const removed = [];
+
+    for (const name of toRemove) {
+      try {
+        await backupsHandle.removeEntry(name);
+        removed.push(name);
+      } catch (error) {
+        console.warn('Cannot remove old backup', name, error);
+      }
+    }
+
+    return removed;
+  }
+
   async function saveBackupToDirectory(directoryHandle, previousText) {
     if (!previousText) return null;
     const backupsHandle = await directoryHandle.getDirectoryHandle('backups', { create: true });
-    const backupName = 'coins_backup_' + timestamp() + '.json';
+    const backupName = BACKUP_PREFIX + timestamp() + BACKUP_SUFFIX;
     const backupFileHandle = await backupsHandle.getFileHandle(backupName, { create: true });
     await writeTextToFileHandle(backupFileHandle, previousText);
-    return backupName;
+    const removedBackups = await pruneOldBackups(backupsHandle, BACKUP_LIMIT);
+    return {
+      name: backupName,
+      removedBackups: removedBackups
+    };
   }
 
   async function saveCatalog(catalog) {
-    const text = JSON.stringify(CoinDB.normalizeCatalog(catalog), null, 2);
+    const text = CoinDB.stringifyCatalog(catalog);
     const previousText = CoinDB.getLastSavedText();
 
     const directoryHandle = await getStoredHandle(DIRECTORY_HANDLE_KEY);
     if (directoryHandle && await verifyPermission(directoryHandle, 'readwrite')) {
       const fileHandle = await directoryHandle.getFileHandle('coins.json', { create: true });
-      let backupName = null;
+      let backupInfo = null;
       let backupError = null;
 
       try {
-        backupName = await saveBackupToDirectory(directoryHandle, previousText);
+        backupInfo = await saveBackupToDirectory(directoryHandle, previousText);
       } catch (error) {
         backupError = error;
       }
@@ -190,8 +229,10 @@
       return {
         saved: true,
         mode: 'directory',
-        backupCreated: Boolean(backupName),
-        backupName: backupName,
+        backupCreated: Boolean(backupInfo && backupInfo.name),
+        backupName: backupInfo && backupInfo.name,
+        removedBackups: backupInfo && backupInfo.removedBackups || [],
+        backupLimit: BACKUP_LIMIT,
         backupError: backupError
       };
     }
@@ -226,7 +267,7 @@
   }
 
   function downloadCatalog(catalog, fileName) {
-    downloadText(JSON.stringify(CoinDB.normalizeCatalog(catalog), null, 2), fileName || 'coins.json');
+    downloadText(CoinDB.stringifyCatalog(catalog), fileName || 'coins.json');
   }
 
 
@@ -256,41 +297,109 @@
     return String(path || '').trim().replace(/^\/+/, '').replace(/\\/g, '/');
   }
 
+  function makeImageLoadError(code, message, path, sourceError) {
+    const error = new Error(message || 'Ошибка загрузки изображения.');
+    error.code = code || 'load-error';
+    error.path = path || '';
+    error.sourceError = sourceError || null;
+    return error;
+  }
+
   function getCachedImageObjectUrl(cacheKey) {
     const cached = imageObjectUrlCache.get(cacheKey);
     if (!cached) return null;
+
+    imageObjectUrlCache.delete(cacheKey);
+    imageObjectUrlCache.set(cacheKey, cached);
+
     return cached.url || null;
   }
 
-  async function loadImageObjectUrl(path) {
+  function trimImageObjectUrlCache() {
+    while (imageObjectUrlCache.size > IMAGE_OBJECT_URL_CACHE_LIMIT) {
+      const oldestKey = imageObjectUrlCache.keys().next().value;
+      if (!oldestKey) return;
+
+      const oldest = imageObjectUrlCache.get(oldestKey);
+      if (oldest && oldest.url) URL.revokeObjectURL(oldest.url);
+      imageObjectUrlCache.delete(oldestKey);
+    }
+  }
+
+  function getImageErrorCode(error) {
+    if (!error) return 'load-error';
+    if (error.name === 'NotFoundError') return 'not-found';
+    if (error.name === 'NotAllowedError' || error.name === 'SecurityError') return 'no-permission';
+    return 'read-error';
+  }
+
+  async function loadImageObjectUrlDetailed(path) {
     const normalizedPath = normalizeImagePath(path);
-    if (!normalizedPath) return null;
+    if (!normalizedPath) {
+      throw makeImageLoadError('empty-path', 'Путь к фото не указан.', normalizedPath);
+    }
 
     const directoryHandle = await getStoredHandle(DIRECTORY_HANDLE_KEY);
-    if (!directoryHandle || !(await hasPermission(directoryHandle, 'read'))) return null;
+    if (!directoryHandle) {
+      throw makeImageLoadError('missing-directory', 'Папка каталога не открыта.', normalizedPath);
+    }
 
+    if (!(await hasPermission(directoryHandle, 'read'))) {
+      throw makeImageLoadError('no-permission', 'Нет доступа к папке каталога.', normalizedPath);
+    }
+
+    let file;
     try {
-      const file = await getFileFromDirectoryPath(directoryHandle, normalizedPath);
-      if (!file) return null;
+      file = await getFileFromDirectoryPath(directoryHandle, normalizedPath);
+    } catch (error) {
+      throw makeImageLoadError(getImageErrorCode(error), error.message, normalizedPath, error);
+    }
 
-      const cacheKey = normalizedPath + '::' + file.size + '::' + file.lastModified;
-      const cachedUrl = getCachedImageObjectUrl(cacheKey);
-      if (cachedUrl) return cachedUrl;
+    if (!file) {
+      throw makeImageLoadError('not-found', 'Файл не найден.', normalizedPath);
+    }
 
-      if (imageObjectUrlPromises.has(cacheKey)) {
-        return imageObjectUrlPromises.get(cacheKey);
-      }
+    const cacheKey = normalizedPath + '::' + file.size + '::' + file.lastModified;
+    const cachedUrl = getCachedImageObjectUrl(cacheKey);
+    if (cachedUrl) {
+      return {
+        url: cachedUrl,
+        cached: true,
+        path: normalizedPath
+      };
+    }
 
-      const promise = Promise.resolve().then(function () {
-        const url = URL.createObjectURL(file);
-        imageObjectUrlCache.set(cacheKey, { url: url, path: normalizedPath });
-        return url;
-      }).finally(function () {
-        imageObjectUrlPromises.delete(cacheKey);
-      });
+    if (imageObjectUrlPromises.has(cacheKey)) {
+      const sharedUrl = await imageObjectUrlPromises.get(cacheKey);
+      return {
+        url: sharedUrl,
+        cached: true,
+        path: normalizedPath
+      };
+    }
 
-      imageObjectUrlPromises.set(cacheKey, promise);
-      return promise;
+    const promise = Promise.resolve().then(function () {
+      const url = URL.createObjectURL(file);
+      imageObjectUrlCache.set(cacheKey, { url: url, path: normalizedPath });
+      trimImageObjectUrlCache();
+      return url;
+    }).finally(function () {
+      imageObjectUrlPromises.delete(cacheKey);
+    });
+
+    imageObjectUrlPromises.set(cacheKey, promise);
+
+    return {
+      url: await promise,
+      cached: false,
+      path: normalizedPath
+    };
+  }
+
+  async function loadImageObjectUrl(path) {
+    try {
+      const result = await loadImageObjectUrlDetailed(path);
+      return result.url;
     } catch (error) {
       return null;
     }
@@ -326,6 +435,7 @@
     revokeImageObjectUrls: revokeImageObjectUrls,
     loadPlainFileInput: loadPlainFileInput,
     clearStoredHandles: clearStoredHandles,
-    timestamp: timestamp
+    timestamp: timestamp,
+    backupLimit: BACKUP_LIMIT
   };
 })();
