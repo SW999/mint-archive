@@ -26,6 +26,7 @@
     'purchasePrice',
     'source',
     'currentValue',
+    'salePrice',
     'status',
     'comment',
     'storageLocation',
@@ -34,7 +35,7 @@
     'slabUrl'
   ];
   const COIN_FIELDS = COIN_REQUIRED_FIELDS.concat(COIN_OPTIONAL_FIELDS);
-  const MONEY_FIELDS = ['purchasePrice', 'currentValue'];
+  const MONEY_FIELDS = ['purchasePrice', 'currentValue', 'salePrice'];
   const MULTILINE_FIELDS = ['comment'];
 
 
@@ -100,8 +101,25 @@
     return sign + (integerPart || '0') + '.' + decimalPart;
   }
 
+  const STATUS_IN_COLLECTION = 'in_collection';
+  const STATUS_SOLD = 'sold';
+
+  function normalizeStatus(value) {
+    const text = stripUnsafeControlChars(value).toLowerCase();
+    if (!text) return STATUS_IN_COLLECTION;
+    const normalized = text.replace(/[\s_-]+/g, ' ').trim();
+    if (['sold', 'продано', 'продан', 'sale'].includes(normalized)) return STATUS_SOLD;
+    if (['in collection', 'в коллекции', 'collection', 'active'].includes(normalized)) return STATUS_IN_COLLECTION;
+    return STATUS_IN_COLLECTION;
+  }
+
+  function isSold(coin) {
+    return normalizeStatus(coin && coin.status) === STATUS_SOLD;
+  }
+
   function normalizeCoinField(field, value) {
     if (MONEY_FIELDS.includes(field)) return normalizeDecimalText(value);
+    if (field === 'status') return normalizeStatus(value);
     if (field === 'issuerId') {
       const text = stripUnsafeControlChars(value);
       return /^\d+$/.test(text) ? text : '';
@@ -195,6 +213,8 @@
 
     COIN_OPTIONAL_FIELDS.forEach(function (field) {
       if (field === 'country' && source.issuerId) return;
+      if (field === 'status' && source.status === STATUS_IN_COLLECTION) return;
+      if (field === 'salePrice' && source.status !== STATUS_SOLD) return;
       const value = normalizeCoinField(field, source[field]);
       if (!value) return;
       if (field === 'issuerId') {
@@ -203,6 +223,11 @@
         coin[field] = value;
       }
     });
+
+    if (source.status !== STATUS_SOLD) {
+      delete coin.status;
+      delete coin.salePrice;
+    }
 
     const obverse = normalizeValue(source.photos && source.photos.obverse).trim();
     const reverse = normalizeValue(source.photos && source.photos.reverse).trim();
@@ -437,6 +462,10 @@
     normalizeCoin: normalizeCoin,
     normalizeCoinField: normalizeCoinField,
     normalizeDecimalText: normalizeDecimalText,
+    normalizeStatus: normalizeStatus,
+    isSold: isSold,
+    STATUS_IN_COLLECTION: STATUS_IN_COLLECTION,
+    STATUS_SOLD: STATUS_SOLD,
     normalizeUrlText: normalizeUrlText,
     isValidHttpUrl: isValidHttpUrl,
     compactCoin: compactCoin,

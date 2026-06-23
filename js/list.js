@@ -139,7 +139,7 @@
     const current = CoinDB.loadCatalog();
     AppUI.fillSelect(AppUI.byId('countryFilter'), AppIssuers.getUsedIssuerOptions(current.coins), 'Все эмитенты');
     AppUI.fillSelect(AppUI.byId('materialFilter'), CoinDB.uniqueValues(current.coins, 'material'), 'Все материалы');
-    AppUI.fillSelect(AppUI.byId('statusFilter'), CoinDB.uniqueValues(current.coins, 'status'), 'Все статусы');
+    AppUI.fillSelect(AppUI.byId('statusFilter'), AppUI.STATUS_OPTIONS, 'Все статусы');
     AppUI.fillSelect(AppUI.byId('conditionFilter'), CoinDB.uniqueValues(current.coins, 'condition'), 'Все состояния');
     AppUI.fillSelect(AppUI.byId('seriesFilter'), current.series.map(function (item) { return { value: item.id, label: item.name }; }), 'Все серии');
   }
@@ -174,14 +174,14 @@
         coin.material,
         coin.catalogNumber,
         coin.condition,
-        coin.status,
+        AppUI.getStatusLabel(coin.status),
         coin.comment,
         (coin.seriesIds || []).map(function (id) { return seriesNameMap.get(id) || ''; }).join(' ')
       ].join(' ').toLowerCase();
 
       if (search && !haystack.includes(search)) return false;
       if (country && !AppIssuers.matchesCoin(coin, country)) return false;
-      if (status && coin.status !== status) return false;
+      if (status && CoinDB.normalizeStatus(coin.status) !== status) return false;
       if (material && coin.material !== material) return false;
       if (condition && coin.condition !== condition) return false;
       if (seriesId && !(coin.seriesIds || []).includes(seriesId)) return false;
@@ -273,7 +273,11 @@
 
     const footer = AppUI.createElement('div', 'coin-card__footer');
     if (coin.condition) footer.appendChild(AppUI.createChip(coin.condition, 'accent'));
-    if (coin.status) footer.appendChild(AppUI.createChip(coin.status, 'success'));
+    if (CoinDB.isSold(coin)) {
+      footer.appendChild(AppUI.createChip(AppUI.getStatusLabel(coin.status), 'danger'));
+    } else {
+      footer.appendChild(AppUI.createChip(AppUI.getStatusLabel(coin.status), 'success'));
+    }
     if (coin.currentValue) footer.appendChild(AppUI.createChip('Оценка: ' + AppCurrency.formatPrice(coin.currentValue)));
 
     CoinDB.getSeriesByIds(catalog.series, coin.seriesIds).forEach(function (series) {
@@ -319,7 +323,8 @@
   function renderTotal(coins) {
     const totalNode = AppUI.byId('totalAmount');
     if (!totalNode) return;
-    const totalEuro = AppCurrency.sumEuroPrices(coins, 'purchasePrice');
+    const activeCoins = coins.filter(function (coin) { return !CoinDB.isSold(coin); });
+    const totalEuro = AppCurrency.sumEuroPrices(activeCoins, 'purchasePrice');
     const currency = AppCurrency.getSelectedCurrency();
     const converted = AppCurrency.convertFromEuro(totalEuro, currency);
 

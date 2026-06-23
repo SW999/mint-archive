@@ -26,7 +26,7 @@
 
     draftKey = getDraftKey(id);
 
-    renderForm(originalCoin || CoinDB.normalizeCoin({ id: CoinDB.generateId(), status: 'В коллекции' }));
+    renderForm(originalCoin || CoinDB.normalizeCoin({ id: CoinDB.generateId(), status: CoinDB.STATUS_IN_COLLECTION }));
     bindEvents();
     await offerDraftRestore();
     AppUI.updateMetaView();
@@ -59,6 +59,7 @@
 
     updatePreview('photos.obverse', 'obversePreview', 'obverse');
     updatePreview('photos.reverse', 'reversePreview', 'reverse');
+    updateSaleSectionVisibility();
   }
 
   function createFormSection(group, coin) {
@@ -77,13 +78,103 @@
         grid.appendChild(createPhotoField(field, getValue(coin, field)));
       } else if (field === 'issuerId') {
         grid.appendChild(createIssuerField(coin));
+      } else if (field === 'status') {
+        grid.appendChild(createStatusField(coin));
+      } else if (group.type === 'sale') {
+        grid.appendChild(createSaleField(field, coin));
       } else {
         grid.appendChild(createInputField(field, getValue(coin, field)));
       }
     });
 
+    if (group.type === 'sale') {
+      section.dataset.sectionType = 'sale';
+      section.classList.toggle('hidden', CoinDB.normalizeStatus(coin.status) !== CoinDB.STATUS_SOLD);
+    }
+
     section.appendChild(grid);
     return section;
+  }
+
+  function createStatusField(coin) {
+    const wrapper = AppUI.createElement('label', 'form-field');
+    wrapper.appendChild(AppUI.createElement('span', 'form-label', AppUI.getFieldLabel('status')));
+
+    const select = document.createElement('select');
+    select.className = 'select-field';
+    select.name = 'status';
+
+    AppUI.STATUS_OPTIONS.forEach(function (item) {
+      const option = document.createElement('option');
+      option.value = item.value;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+
+    select.value = CoinDB.normalizeStatus(coin.status);
+    select.addEventListener('change', updateSaleSectionVisibility);
+    wrapper.appendChild(select);
+    return wrapper;
+  }
+
+  function createSaleField(field, coin) {
+    const wrapper = AppUI.createElement('label', 'form-field');
+    wrapper.appendChild(AppUI.createElement('span', 'form-label', AppUI.getFieldLabel(field)));
+
+    if (field === 'saleSpread') {
+      const value = AppUI.createElement('div', 'readonly-field');
+      value.id = 'saleSpreadValue';
+      value.textContent = calculateSaleSpreadText(coin);
+      wrapper.appendChild(value);
+      wrapper.appendChild(AppUI.createElement('p', 'small-note', 'Спрэд считается как сумма продажи минус цена покупки. Если цена покупки не указана, спрэд не считается.'));
+      return wrapper;
+    }
+
+    const input = document.createElement('input');
+    input.className = 'field';
+    input.name = field;
+    input.value = coin.salePrice || '';
+    input.autocomplete = 'off';
+    input.type = 'text';
+    input.addEventListener('input', updateSaleSpreadValue);
+
+    const inputShell = AppUI.createElement('div', 'field-with-suffix');
+    inputShell.appendChild(input);
+    inputShell.appendChild(AppUI.createElement('span', 'field-suffix', '€'));
+    wrapper.appendChild(inputShell);
+    wrapper.appendChild(AppUI.createElement('p', 'small-note', 'Сумма продажи хранится без символа валюты.'));
+    return wrapper;
+  }
+
+  function updateSaleSectionVisibility() {
+    const section = document.querySelector('[data-section-type="sale"]');
+    const status = document.querySelector('[name="status"]');
+    if (!section || !status) return;
+
+    const isSold = CoinDB.normalizeStatus(status.value) === CoinDB.STATUS_SOLD;
+    section.classList.toggle('hidden', !isSold);
+    if (!isSold) {
+      const salePrice = document.querySelector('[name="salePrice"]');
+      if (salePrice) salePrice.value = '';
+    }
+    updateSaleSpreadValue();
+  }
+
+  function updateSaleSpreadValue() {
+    const node = AppUI.byId('saleSpreadValue');
+    if (!node) return;
+    node.textContent = calculateSaleSpreadText(readFormCoin({ validate: false }));
+  }
+
+  function calculateSaleSpreadText(coin) {
+    if (CoinDB.normalizeStatus(coin.status) !== CoinDB.STATUS_SOLD) return '—';
+    const sale = Number(CoinDB.normalizeDecimalText(coin.salePrice));
+    const purchase = Number(CoinDB.normalizeDecimalText(coin.purchasePrice));
+    if (!Number.isFinite(sale) || sale <= 0) return '—';
+    if (!Number.isFinite(purchase) || purchase <= 0) return '—';
+    const spread = sale - purchase;
+    const sign = spread > 0 ? '+' : '';
+    return sign + AppCurrency.formatPrice(String(spread));
   }
 
   function createInputField(field, value) {
@@ -111,7 +202,7 @@
       input.autocapitalize = 'sentences';
     }
 
-    if (field === 'purchasePrice' || field === 'currentValue') {
+    if (field === 'purchasePrice' || field === 'currentValue' || field === 'salePrice') {
       const inputShell = AppUI.createElement('div', 'field-with-suffix');
       inputShell.appendChild(input);
       inputShell.appendChild(AppUI.createElement('span', 'field-suffix', '€'));
@@ -311,7 +402,7 @@
   function validateCoinForm(coin) {
     const errors = [];
 
-    ['purchasePrice', 'currentValue'].forEach(function (field) {
+    ['purchasePrice', 'currentValue', 'salePrice'].forEach(function (field) {
       const value = String(coin[field] || '').trim();
       if (!value) return;
       if (!/^\d+(\.\d+)?$/.test(value)) {
@@ -346,7 +437,7 @@
     const coin = CoinDB.normalizeCoin(originalCoin || { id: formData.get('id') || CoinDB.generateId() });
 
     CoinDB.COIN_FIELDS.forEach(function (field) {
-      if (field === 'id' || field === 'issuerId' || field === 'country') return;
+      if (field === 'id' || field === 'issuerId' || field === 'country' || field === 'saleSpread') return;
       if (!formData.has(field)) return;
       const value = formData.get(field);
       coin[field] = normalizeFormValue(field, value);
@@ -369,6 +460,10 @@
     coin.seriesIds = Array.from(form.querySelectorAll('[name="seriesIds"]:checked')).map(function (input) {
       return input.value;
     });
+
+    if (CoinDB.normalizeStatus(coin.status) !== CoinDB.STATUS_SOLD) {
+      coin.salePrice = '';
+    }
 
     if (!options || options.validate !== false) validateCoinForm(coin);
     return coin;

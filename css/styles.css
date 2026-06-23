@@ -358,6 +358,11 @@ textarea.field {
   color: #255b3b;
 }
 
+.chip--danger {
+  background: #f5d6d6;
+  color: #8a1f1f;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   padding: 34px;
@@ -465,6 +470,17 @@ textarea.field {
 .form-section__title {
   margin: 0 0 14px;
   font-size: 18px;
+}
+
+.readonly-field {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  font-weight: 700;
 }
 
 .form-grid {

@@ -22,6 +22,8 @@
     purchasePrice: 'Цена покупки',
     source: 'Источник',
     currentValue: 'Текущая оценка',
+    salePrice: 'Сумма продажи',
+    saleSpread: 'Спрэд',
     slabCompany: 'Грейдинговая компания',
     slabNumber: 'Номер слаба',
     slabUrl: 'Ссылка на страницу грейдера',
@@ -31,6 +33,17 @@
     obverse: 'Фото аверса',
     reverse: 'Фото реверса'
   };
+
+  const STATUS_OPTIONS = [
+    { value: 'in_collection', label: 'В коллекции' },
+    { value: 'sold', label: 'Продано' }
+  ];
+
+  function getStatusLabel(value) {
+    const normalized = window.CoinDB ? CoinDB.normalizeStatus(value) : String(value || 'in_collection');
+    const option = STATUS_OPTIONS.find(function (item) { return item.value === normalized; });
+    return option ? option.label : 'В коллекции';
+  }
 
   const FIELD_GROUPS = [
     {
@@ -62,6 +75,11 @@
     {
       title: 'Покупка и оценка',
       fields: ['purchaseDate', 'purchasePrice', 'source', 'currentValue']
+    },
+    {
+      title: 'Продажа',
+      fields: ['salePrice', 'saleSpread'],
+      type: 'sale'
     },
     {
       title: 'Комментарий',
@@ -383,6 +401,8 @@
   window.AppUI = {
     FIELD_LABELS: FIELD_LABELS,
     FIELD_GROUPS: FIELD_GROUPS,
+    STATUS_OPTIONS: STATUS_OPTIONS,
+    getStatusLabel: getStatusLabel,
     byId: byId,
     setText: setText,
     setStatus: setStatus,

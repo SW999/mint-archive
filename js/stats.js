@@ -25,8 +25,9 @@
   }
 
   function renderSummary(coins) {
-    const purchaseCoins = coins.filter(function (coin) { return parseMoney(coin.purchasePrice) > 0; });
-    const totalEuro = AppCurrency.sumEuroPrices(coins, 'purchasePrice');
+    const activeCoins = coins.filter(function (coin) { return !CoinDB.isSold(coin); });
+    const purchaseCoins = activeCoins.filter(function (coin) { return parseMoney(coin.purchasePrice) > 0; });
+    const totalEuro = AppCurrency.sumEuroPrices(activeCoins, 'purchasePrice');
     const medianEuro = medianPurchasePrice(purchaseCoins);
     const currency = AppCurrency.getSelectedCurrency();
     const totalConverted = AppCurrency.convertFromEuro(totalEuro, currency);
@@ -54,7 +55,7 @@
   }
 
   function renderCharts(coins) {
-    renderBarChart('monthlyPurchaseChart', monthlyPurchaseRows(coins), {
+    renderBarChart('monthlyPurchaseChart', monthlyPurchaseRows(coins.filter(function (coin) { return !CoinDB.isSold(coin); })), {
       valueFormatter: formatMoneyValue,
       emptyText: 'Нет покупок с заполненной датой и ценой.'
     });

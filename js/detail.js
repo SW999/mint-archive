@@ -79,7 +79,11 @@
 
     const chips = AppUI.byId('detailChips');
     chips.innerHTML = '';
-    if (coin.status) chips.appendChild(AppUI.createChip(coin.status, 'success'));
+    if (CoinDB.isSold(coin)) {
+      chips.appendChild(AppUI.createChip(AppUI.getStatusLabel(coin.status), 'danger'));
+    } else {
+      chips.appendChild(AppUI.createChip(AppUI.getStatusLabel(coin.status), 'success'));
+    }
     if (coin.condition) chips.appendChild(AppUI.createChip(coin.condition, 'accent'));
     if (coin.material) chips.appendChild(AppUI.createChip(coin.material));
     if (coin.currentValue) chips.appendChild(AppUI.createChip('Оценка: ' + AppCurrency.formatPrice(coin.currentValue)));
@@ -101,7 +105,7 @@
       ['Год', coin.year],
       ['Монетный двор', coin.mint],
       ['Тип чеканки', coin.strikeType],
-      ['Статус', coin.status]
+      ['Статус', AppUI.getStatusLabel(coin.status)]
     ]));
 
     appendSeriesSection(content, coin);
@@ -125,6 +129,8 @@
       ['Текущая оценка', coin.currentValue ? formatPriceValue(coin.currentValue) : '']
     ]));
 
+    appendSaleSection(content, coin);
+
     appendSection(content, 'Каталог', compactRows([
       ['Каталожный номер', coin.catalogNumber],
       ['Фото аверса', coin.photos && coin.photos.obverse],
@@ -140,6 +146,25 @@
       commentSection.appendChild(comment);
       content.appendChild(commentSection);
     }
+  }
+
+  function appendSaleSection(content, coin) {
+    if (!CoinDB.isSold(coin)) return;
+
+    appendSection(content, 'Продажа', compactRows([
+      ['Сумма продажи', coin.salePrice ? formatPriceValue(coin.salePrice) : ''],
+      ['Спрэд', calculateSaleSpreadText(coin)]
+    ]));
+  }
+
+  function calculateSaleSpreadText(coin) {
+    const sale = Number(CoinDB.normalizeDecimalText(coin.salePrice));
+    const purchase = Number(CoinDB.normalizeDecimalText(coin.purchasePrice));
+    if (!Number.isFinite(sale) || sale <= 0) return '';
+    if (!Number.isFinite(purchase) || purchase <= 0) return '';
+    const spread = sale - purchase;
+    const sign = spread > 0 ? '+' : '';
+    return sign + formatPriceValue(String(spread));
   }
 
   function appendGradingSection(content, coin) {
