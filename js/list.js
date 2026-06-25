@@ -517,6 +517,7 @@
       if (result.ok) {
         photoDiagnostics.loaded += 1;
         if (result.cached) photoDiagnostics.cached += 1;
+        if (result.persistent) photoDiagnostics.persistent += 1;
         return;
       }
 
@@ -538,6 +539,7 @@
       failed: 0,
       empty: 0,
       cached: 0,
+      persistent: 0,
       byCode: {},
       samples: []
     };
@@ -571,7 +573,8 @@
     });
 
     if (photoDiagnostics.empty) parts.push('без пути к фото: ' + photoDiagnostics.empty);
-    if (photoDiagnostics.cached) parts.push('из session cache: ' + photoDiagnostics.cached);
+    if (photoDiagnostics.cached) parts.push('из cache: ' + photoDiagnostics.cached);
+    if (photoDiagnostics.persistent) parts.push('из хранилища приложения: ' + photoDiagnostics.persistent);
 
     details.innerHTML = '';
     details.appendChild(AppUI.createElement('p', 'small-note', parts.length ? parts.join(' · ') : 'Ошибок загрузки пока нет.'));

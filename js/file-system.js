@@ -3,9 +3,11 @@
 
   const DB_NAME = 'coinsPwaFileHandles';
   const STORE_NAME = 'handles';
+  const IMAGE_STORE_NAME = 'imageCache';
   const FILE_HANDLE_KEY = 'catalogFile';
   const DIRECTORY_HANDLE_KEY = 'catalogDirectory';
   const IMAGE_OBJECT_URL_CACHE_LIMIT = 120;
+  const PERSISTENT_IMAGE_CACHE_LIMIT = 80;
   const imageObjectUrlCache = new Map();
   const imageObjectUrlPromises = new Map();
   const BACKUP_LIMIT = 5;
@@ -23,10 +25,15 @@
 
   function openHandleDB() {
     return new Promise(function (resolve, reject) {
-      const request = indexedDB.open(DB_NAME, 1);
+      const request = indexedDB.open(DB_NAME, 2);
 
       request.onupgradeneeded = function () {
+        if (!request.result.objectStoreNames.contains(STORE_NAME)) {
         request.result.createObjectStore(STORE_NAME);
+      }
+      if (!request.result.objectStoreNames.contains(IMAGE_STORE_NAME)) {
+        request.result.createObjectStore(IMAGE_STORE_NAME);
+      }
       };
 
       request.onsuccess = function () {
@@ -68,12 +75,14 @@
     if (!window.indexedDB) return;
     const db = await openHandleDB();
     await new Promise(function (resolve, reject) {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const tx = db.transaction([STORE_NAME, IMAGE_STORE_NAME], 'readwrite');
       tx.objectStore(STORE_NAME).clear();
+      tx.objectStore(IMAGE_STORE_NAME).clear();
       tx.oncomplete = resolve;
       tx.onerror = function () { reject(tx.error); };
     });
     db.close();
+    revokeImageObjectUrls();
   }
 
   async function hasPermission(handle, mode) {
@@ -233,6 +242,7 @@
         backupName: backupInfo && backupInfo.name,
         removedBackups: backupInfo && backupInfo.removedBackups || [],
         backupLimit: BACKUP_LIMIT,
+    persistentImageCacheLimit: PERSISTENT_IMAGE_CACHE_LIMIT,
         backupError: backupError
       };
     }
@@ -333,11 +343,112 @@
     return 'read-error';
   }
 
+  async function getStoredImageRecord(path) {
+    if (!window.indexedDB) return null;
+    const normalizedPath = normalizeImagePath(path);
+    if (!normalizedPath) return null;
+
+    const db = await openHandleDB();
+    const record = await new Promise(function (resolve, reject) {
+      const tx = db.transaction(IMAGE_STORE_NAME, 'readonly');
+      const request = tx.objectStore(IMAGE_STORE_NAME).get(normalizedPath);
+      request.onsuccess = function () { resolve(request.result || null); };
+      request.onerror = function () { reject(request.error); };
+    });
+    db.close();
+    return record;
+  }
+
+  async function setStoredImageRecord(path, file) {
+    if (!window.indexedDB || !file) return;
+    const normalizedPath = normalizeImagePath(path);
+    if (!normalizedPath) return;
+
+    const record = {
+      path: normalizedPath,
+      blob: file,
+      type: file.type || 'image/*',
+      size: file.size || 0,
+      lastModified: file.lastModified || 0,
+      updatedAt: Date.now()
+    };
+
+    const db = await openHandleDB();
+    await new Promise(function (resolve, reject) {
+      const tx = db.transaction(IMAGE_STORE_NAME, 'readwrite');
+      tx.objectStore(IMAGE_STORE_NAME).put(record, normalizedPath);
+      tx.oncomplete = resolve;
+      tx.onerror = function () { reject(tx.error); };
+    });
+    db.close();
+    pruneStoredImageCache(PERSISTENT_IMAGE_CACHE_LIMIT).catch(function (error) {
+      console.warn('Cannot prune image cache', error);
+    });
+  }
+
+  async function pruneStoredImageCache(keepLimit) {
+    if (!window.indexedDB) return [];
+    const db = await openHandleDB();
+    const records = await new Promise(function (resolve, reject) {
+      const tx = db.transaction(IMAGE_STORE_NAME, 'readonly');
+      const request = tx.objectStore(IMAGE_STORE_NAME).getAll();
+      request.onsuccess = function () { resolve(request.result || []); };
+      request.onerror = function () { reject(request.error); };
+    });
+
+    records.sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    const toRemove = records.slice(keepLimit).map(function (record) { return record.path; }).filter(Boolean);
+
+    if (toRemove.length) {
+      await new Promise(function (resolve, reject) {
+        const tx = db.transaction(IMAGE_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(IMAGE_STORE_NAME);
+        toRemove.forEach(function (path) { store.delete(path); });
+        tx.oncomplete = resolve;
+        tx.onerror = function () { reject(tx.error); };
+      });
+    }
+
+    db.close();
+    return toRemove;
+  }
+
+  async function makeObjectUrlFromStoredImage(path) {
+    const record = await getStoredImageRecord(path);
+    if (!record || !record.blob) return null;
+
+    const normalizedPath = normalizeImagePath(path);
+    const cacheKey = 'stored::' + normalizedPath + '::' + (record.size || 0) + '::' + (record.updatedAt || 0);
+    const cachedUrl = getCachedImageObjectUrl(cacheKey);
+    if (cachedUrl) {
+      return {
+        url: cachedUrl,
+        cached: true,
+        persistent: true,
+        path: normalizedPath
+      };
+    }
+
+    const url = URL.createObjectURL(record.blob);
+    imageObjectUrlCache.set(cacheKey, { url: url, path: normalizedPath });
+    trimImageObjectUrlCache();
+
+    return {
+      url: url,
+      cached: true,
+      persistent: true,
+      path: normalizedPath
+    };
+  }
+
   async function loadImageObjectUrlDetailed(path) {
     const normalizedPath = normalizeImagePath(path);
     if (!normalizedPath) {
       throw makeImageLoadError('empty-path', 'Путь к фото не указан.', normalizedPath);
     }
+
+    const storedFirst = await makeObjectUrlFromStoredImage(normalizedPath);
+    if (storedFirst) return storedFirst;
 
     const directoryHandle = await getStoredHandle(DIRECTORY_HANDLE_KEY);
     if (!directoryHandle) {
@@ -345,6 +456,8 @@
     }
 
     if (!(await hasPermission(directoryHandle, 'read'))) {
+      const storedFallback = await makeObjectUrlFromStoredImage(normalizedPath);
+      if (storedFallback) return storedFallback;
       throw makeImageLoadError('no-permission', 'Нет доступа к папке каталога.', normalizedPath);
     }
 
@@ -352,12 +465,20 @@
     try {
       file = await getFileFromDirectoryPath(directoryHandle, normalizedPath);
     } catch (error) {
+      const storedFallback = await makeObjectUrlFromStoredImage(normalizedPath);
+      if (storedFallback) return storedFallback;
       throw makeImageLoadError(getImageErrorCode(error), error.message, normalizedPath, error);
     }
 
     if (!file) {
+      const storedFallback = await makeObjectUrlFromStoredImage(normalizedPath);
+      if (storedFallback) return storedFallback;
       throw makeImageLoadError('not-found', 'Файл не найден.', normalizedPath);
     }
+
+    setStoredImageRecord(normalizedPath, file).catch(function (error) {
+      console.warn('Cannot persist image cache', normalizedPath, error);
+    });
 
     const cacheKey = normalizedPath + '::' + file.size + '::' + file.lastModified;
     const cachedUrl = getCachedImageObjectUrl(cacheKey);
@@ -365,6 +486,7 @@
       return {
         url: cachedUrl,
         cached: true,
+        persistent: false,
         path: normalizedPath
       };
     }
@@ -374,6 +496,7 @@
       return {
         url: sharedUrl,
         cached: true,
+        persistent: false,
         path: normalizedPath
       };
     }
@@ -392,6 +515,7 @@
     return {
       url: await promise,
       cached: false,
+      persistent: false,
       path: normalizedPath
     };
   }
@@ -436,6 +560,7 @@
     loadPlainFileInput: loadPlainFileInput,
     clearStoredHandles: clearStoredHandles,
     timestamp: timestamp,
-    backupLimit: BACKUP_LIMIT
+    backupLimit: BACKUP_LIMIT,
+    persistentImageCacheLimit: PERSISTENT_IMAGE_CACHE_LIMIT
   };
 })();

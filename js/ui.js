@@ -258,7 +258,7 @@
       frame.textContent = '';
       frame.appendChild(image);
       frame.classList.add('has-image');
-      return { ok: true, path: path, cached: Boolean(result.cached) };
+      return { ok: true, path: path, cached: Boolean(result.cached), persistent: Boolean(result.persistent) };
     } catch (error) {
       const normalized = normalizePhotoError(error, path);
       if (frame.isConnected && frame.dataset.imageToken === token) {
