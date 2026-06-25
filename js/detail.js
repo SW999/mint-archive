@@ -34,7 +34,7 @@
 
   function bindEvents(coin) {
     const editButton = AppUI.byId('editButton');
-    if (editButton) editButton.href = 'form.html?id=' + encodeURIComponent(coin.id);
+    if (editButton) editButton.href = 'index.html#/edit/' + encodeURIComponent(coin.id);
 
     const deleteButton = AppUI.byId('deleteButton');
     if (deleteButton) {
@@ -125,9 +125,6 @@
     renderSectionsTo(AppUI.byId('inlineDetailContent'), coin);
   }
 
-  function renderSections(coin) {
-    renderSectionsTo(AppUI.byId('detailContent'), coin);
-  }
 
   function renderSectionsTo(content, coin) {
     if (!content) return;
