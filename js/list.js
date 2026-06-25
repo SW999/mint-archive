@@ -62,6 +62,12 @@
 
     document.addEventListener('currency-change', function () { render(); refreshInlineDetail(); });
     document.addEventListener('currency-rates-loaded', function () { render(); refreshInlineDetail(); });
+    document.addEventListener('coin-catalog-updated', function () {
+      catalog = CoinDB.loadCatalog();
+      setupFilters();
+      render();
+      AppUI.updateMetaView();
+    });
   }
 
   async function openFolder() {
@@ -169,16 +175,26 @@
     AppUI.updateMetaView();
   }
 
-  function parseCoinIdFromHash() {
+  function parseRouteFromHash() {
     const hash = window.location.hash || '';
-    const match = hash.match(/^#\/coin\/(.+)$/);
-    return match ? decodeURIComponent(match[1]) : '';
+    let match = hash.match(/^#\/coin\/(.+)$/);
+    if (match) return { screen: 'coin', id: decodeURIComponent(match[1]) };
+
+    match = hash.match(/^#\/edit\/(.+)$/);
+    if (match) return { screen: 'edit', id: decodeURIComponent(match[1]) };
+
+    if (hash === '#/new') return { screen: 'new', id: '' };
+    return { screen: 'list', id: '' };
   }
 
   function syncRouteFromHash() {
-    const id = parseCoinIdFromHash();
-    if (id) {
-      showInlineDetail(id, false);
+    const route = parseRouteFromHash();
+    if (route.screen === 'coin') {
+      showInlineDetail(route.id, false);
+    } else if (route.screen === 'edit') {
+      showInlineForm(route.id, false);
+    } else if (route.screen === 'new') {
+      showInlineForm('', false);
     } else {
       showCatalogScreen(false);
     }
@@ -188,8 +204,11 @@
     currentDetailId = null;
     const catalogScreen = AppUI.byId('catalogScreen');
     const detailScreen = AppUI.byId('inlineDetailScreen');
+    const formScreen = AppUI.byId('inlineFormScreen');
     if (catalogScreen) catalogScreen.classList.remove('hidden');
     if (detailScreen) detailScreen.classList.add('hidden');
+    if (formScreen) formScreen.classList.add('hidden');
+    if (window.AppCoinForm && AppCoinForm.reset) AppCoinForm.reset();
     document.title = 'Каталог монет';
     if (updateHash && window.location.hash) {
       history.pushState('', document.title, window.location.pathname + window.location.search);
@@ -208,11 +227,13 @@
     currentDetailId = String(coin.id);
     const catalogScreen = AppUI.byId('catalogScreen');
     const detailScreen = AppUI.byId('inlineDetailScreen');
+    const formScreen = AppUI.byId('inlineFormScreen');
     if (catalogScreen) catalogScreen.classList.add('hidden');
     if (detailScreen) detailScreen.classList.remove('hidden');
+    if (formScreen) formScreen.classList.add('hidden');
 
     const editButton = AppUI.byId('inlineEditButton');
-    if (editButton) editButton.href = 'form.html?id=' + encodeURIComponent(coin.id);
+    if (editButton) editButton.href = '#/edit/' + encodeURIComponent(coin.id);
 
     if (window.AppDetail && AppDetail.renderCoinInline) {
       AppDetail.renderCoinInline(coin, catalog);
@@ -221,6 +242,25 @@
     document.title = CoinDB.getDisplayTitle(coin) + ' · Каталог монет';
     if (updateHash) {
       window.location.hash = '/coin/' + encodeURIComponent(coin.id);
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  async function showInlineForm(id, updateHash) {
+    const catalogScreen = AppUI.byId('catalogScreen');
+    const detailScreen = AppUI.byId('inlineDetailScreen');
+    const formScreen = AppUI.byId('inlineFormScreen');
+    if (catalogScreen) catalogScreen.classList.add('hidden');
+    if (detailScreen) detailScreen.classList.add('hidden');
+    if (formScreen) formScreen.classList.remove('hidden');
+
+    if (window.AppCoinForm && AppCoinForm.openInline) {
+      await AppCoinForm.openInline(id || '');
+    }
+
+    document.title = (id ? 'Редактировать монету' : 'Добавить монету') + ' · Каталог монет';
+    if (updateHash) {
+      window.location.hash = id ? '/edit/' + encodeURIComponent(id) : '/new';
     }
     window.scrollTo({ top: 0, behavior: 'auto' });
   }

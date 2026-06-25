@@ -423,12 +423,14 @@ textarea.field {
   align-items: start;
 }
 
-.inline-detail {
+.inline-detail,
+.inline-form {
   display: grid;
   gap: 18px;
 }
 
-.inline-detail.hidden {
+.inline-detail.hidden,
+.inline-form.hidden {
   display: none !important;
 }
 

@@ -7,15 +7,32 @@
   let draftTimer = null;
   let isSubmitting = false;
   let seriesList = [];
+  let eventsBound = false;
+  let inlineMode = false;
 
-  document.addEventListener('DOMContentLoaded', init);
+  window.AppCoinForm = {
+    openInline: openInlineForm,
+    reset: resetFormState
+  };
 
-  async function init() {
+  document.addEventListener('DOMContentLoaded', initIfStandalone);
+
+  async function initIfStandalone() {
+    if (!AppUI.byId('coinForm') || AppUI.byId('catalogScreen')) return;
+    const params = new URLSearchParams(window.location.search);
+    await setupForm(params.get('id'), { inline: false });
+  }
+
+  async function openInlineForm(id) {
+    await setupForm(id, { inline: true });
+  }
+
+  async function setupForm(id, options) {
+    inlineMode = Boolean(options && options.inline);
+    isSubmitting = false;
     await AppCurrency.init();
     if (window.AppIssuers) await AppIssuers.init();
 
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
     const currentCatalog = CoinDB.loadCatalog();
     seriesList = CoinDB.normalizeSeries(currentCatalog.series);
     originalCoin = id ? CoinDB.getCoinById(id) : null;
@@ -28,25 +45,61 @@
 
     renderForm(originalCoin || CoinDB.normalizeCoin({ id: CoinDB.generateId(), status: CoinDB.STATUS_IN_COLLECTION }));
     bindEvents();
+    syncDeleteButton();
     await offerDraftRestore();
     AppUI.updateMetaView();
   }
 
+  function resetFormState() {
+    mode = 'create';
+    originalCoin = null;
+    draftKey = '';
+    isSubmitting = false;
+    window.clearTimeout(draftTimer);
+  }
+
   function bindEvents() {
+    if (eventsBound) return;
+    eventsBound = true;
+
     const form = AppUI.byId('coinForm');
-    form.addEventListener('submit', submitForm);
-    form.addEventListener('input', scheduleDraftSave);
-    form.addEventListener('change', scheduleDraftSave);
+    if (form) {
+      form.addEventListener('submit', submitForm);
+      form.addEventListener('input', scheduleDraftSave);
+      form.addEventListener('change', scheduleDraftSave);
+    }
+
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') saveDraftNow();
     });
     window.addEventListener('pagehide', saveDraftNow);
 
     const deleteButton = AppUI.byId('deleteButton');
-    if (mode === 'edit') {
-      deleteButton.classList.remove('hidden');
-      deleteButton.addEventListener('click', deleteCurrentCoin);
+    if (deleteButton) deleteButton.addEventListener('click', deleteCurrentCoin);
+
+    const cancelButton = AppUI.byId('inlineFormCancelButton');
+    if (cancelButton) {
+      cancelButton.addEventListener('click', function () {
+        if (originalCoin) {
+          window.location.hash = '/coin/' + encodeURIComponent(originalCoin.id);
+        } else {
+          window.location.hash = '';
+        }
+      });
     }
+
+    const backButton = AppUI.byId('inlineFormBackButton');
+    if (backButton) {
+      backButton.addEventListener('click', function () {
+        window.location.hash = '';
+      });
+    }
+  }
+
+  function syncDeleteButton() {
+    const deleteButton = AppUI.byId('deleteButton');
+    if (!deleteButton) return;
+    deleteButton.classList.toggle('hidden', mode !== 'edit');
   }
 
   function renderForm(coin) {
@@ -537,13 +590,22 @@
       AppUI.updateMetaView();
       AppUI.setStatus(AppUI.formatSaveResultMessage(result, 'Монета сохранена в coins.json.', 'Монета сохранена. Обновленный JSON скачан.'), 'success');
 
+      notifyCatalogUpdated({ coinId: coin.id, action: 'save' });
       window.setTimeout(function () {
-        window.location.href = 'index.html#/coin/' + encodeURIComponent(coin.id);
+        if (inlineMode) {
+          window.location.hash = '/coin/' + encodeURIComponent(coin.id);
+        } else {
+          window.location.href = 'index.html#/coin/' + encodeURIComponent(coin.id);
+        }
       }, 450);
     } catch (error) {
       isSubmitting = false;
       AppUI.setStatus(error.message || 'Не удалось сохранить монету.', 'danger');
     }
+  }
+
+  function notifyCatalogUpdated(detail) {
+    document.dispatchEvent(new CustomEvent('coin-catalog-updated', { detail: detail || {} }));
   }
 
   async function deleteCurrentCoin() {
@@ -563,8 +625,13 @@
       await clearDraft();
       AppUI.setStatus(AppUI.formatSaveResultMessage(result, 'Монета удалена из coins.json.', 'Монета удалена. Обновленный JSON скачан.'), 'success');
 
+      notifyCatalogUpdated({ coinId: originalCoin.id, action: 'delete' });
       window.setTimeout(function () {
-        window.location.href = 'index.html';
+        if (inlineMode) {
+          window.location.hash = '';
+        } else {
+          window.location.href = 'index.html';
+        }
       }, 450);
     } catch (error) {
       isSubmitting = false;
