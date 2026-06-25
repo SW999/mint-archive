@@ -538,7 +538,7 @@
       AppUI.setStatus(AppUI.formatSaveResultMessage(result, 'Монета сохранена в coins.json.', 'Монета сохранена. Обновленный JSON скачан.'), 'success');
 
       window.setTimeout(function () {
-        window.location.href = 'coin.html?id=' + encodeURIComponent(coin.id);
+        window.location.href = 'index.html#/coin/' + encodeURIComponent(coin.id);
       }, 450);
     } catch (error) {
       isSubmitting = false;

@@ -243,7 +243,7 @@
     frame.classList.remove('has-image');
     frame.classList.remove('has-error');
     frame.textContent = '';
-    frame.style.backgroundImage = 'url("' + placeholder(kind) + '")';
+    frame.classList.add('coin-card__image-frame--' + kind);
 
     if (!path) {
       frame.classList.remove('is-loading');
@@ -256,7 +256,6 @@
       const image = await createLoadedImage(result.url, alt);
       if (!frame.isConnected || frame.dataset.imageToken !== token) return { ok: false, code: 'detached', path: path, message: 'Карточка уже обновлена' };
       frame.textContent = '';
-      frame.style.backgroundImage = '';
       frame.appendChild(image);
       frame.classList.add('has-image');
       return { ok: true, path: path, cached: Boolean(result.cached) };

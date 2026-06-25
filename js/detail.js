@@ -7,6 +7,7 @@
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
+    if (!AppUI.byId('detailContent')) return;
     await AppCurrency.init();
     if (window.AppIssuers) await AppIssuers.init();
 
@@ -91,11 +92,45 @@
       chips.appendChild(AppUI.createChip(series.name));
     });
 
-    renderSections(coin);
+    renderSectionsTo(AppUI.byId('detailContent'), coin);
+  }
+
+  function renderCoinInline(coin, activeCatalog) {
+    if (!coin) return;
+    catalog = activeCatalog || CoinDB.loadCatalog();
+    currentCoin = coin;
+
+    AppUI.setText(AppUI.byId('inlineDetailTitle'), CoinDB.getDisplayTitle(coin));
+    AppUI.setText(AppUI.byId('inlineDetailSubtitle'), CoinDB.compactText([AppIssuers.getCoinIssuerName(coin), coin.year, coin.mint]));
+
+    AppUI.setCoinImage(AppUI.byId('inlineObverseImage'), coin.photos && coin.photos.obverse, 'obverse', { lazy: false });
+    AppUI.setCoinImage(AppUI.byId('inlineReverseImage'), coin.photos && coin.photos.reverse, 'reverse', { lazy: false });
+
+    const chips = AppUI.byId('inlineDetailChips');
+    if (chips) {
+      chips.innerHTML = '';
+      if (CoinDB.isSold(coin)) {
+        chips.appendChild(AppUI.createChip(AppUI.getStatusLabel(coin.status), 'danger'));
+      } else {
+        chips.appendChild(AppUI.createChip(AppUI.getStatusLabel(coin.status), 'success'));
+      }
+      if (coin.condition) chips.appendChild(AppUI.createChip(coin.condition, 'accent'));
+      if (coin.material) chips.appendChild(AppUI.createChip(coin.material));
+      if (coin.currentValue) chips.appendChild(AppUI.createChip('Оценка: ' + AppCurrency.formatPrice(coin.currentValue)));
+      CoinDB.getSeriesByIds(catalog.series, coin.seriesIds).forEach(function (series) {
+        chips.appendChild(AppUI.createChip(series.name));
+      });
+    }
+
+    renderSectionsTo(AppUI.byId('inlineDetailContent'), coin);
   }
 
   function renderSections(coin) {
-    const content = AppUI.byId('detailContent');
+    renderSectionsTo(AppUI.byId('detailContent'), coin);
+  }
+
+  function renderSectionsTo(content, coin) {
+    if (!content) return;
     content.innerHTML = '';
 
     appendSection(content, 'Основное', compactRows([
@@ -244,4 +279,9 @@
     section.appendChild(grid);
     return section;
   }
+
+  window.AppDetail = {
+    renderCoinInline: renderCoinInline
+  };
+
 })();

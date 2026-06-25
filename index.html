@@ -63,6 +63,7 @@
       </div>
     </details>
 
+    <section id="catalogScreen" class="catalog-screen">
     <details id="statsPanel" class="stats-panel" open aria-label="Статистика">
       <summary class="stats-panel__summary">Сводка по выборке</summary>
       <section class="stats">
@@ -112,6 +113,38 @@
       <span>Общая сумма:</span>
       <strong id="totalAmount">—</strong>
     </section>
+    </section>
+
+    <section id="inlineDetailScreen" class="inline-detail hidden" aria-label="Карточка монеты">
+      <div class="detail-actions detail-actions--inline">
+        <button id="inlineBackButton" class="button" type="button">← В каталог</button>
+        <a id="inlineEditButton" class="link-button button--accent" href="form.html">Редактировать</a>
+        <button id="inlineDeleteButton" class="button button--danger" type="button">Удалить</button>
+      </div>
+
+      <header class="detail-header detail-header--inline">
+        <h2 id="inlineDetailTitle" class="detail-title">Монета</h2>
+        <p id="inlineDetailSubtitle" class="brand__subtitle">—</p>
+        <div id="inlineDetailChips" class="coin-card__footer"></div>
+      </header>
+
+      <section class="detail-layout">
+        <aside class="photo-panel" aria-label="Фото монеты">
+          <div>
+            <img id="inlineObverseImage" class="coin-photo" alt="Аверс монеты">
+            <p class="photo-caption">Аверс</p>
+          </div>
+          <div>
+            <img id="inlineReverseImage" class="coin-photo" alt="Реверс монеты">
+            <p class="photo-caption">Реверс</p>
+          </div>
+        </aside>
+
+        <article>
+          <div id="inlineDetailContent"></div>
+        </article>
+      </section>
+    </section>
   </main>
 
   <script src="js/db.js"></script>
@@ -121,6 +154,7 @@
   <script src="js/ui.js"></script>
   <script src="js/drafts.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/detail.js"></script>
   <script src="js/list.js"></script>
 </body>
 </html>

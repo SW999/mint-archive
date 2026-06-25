@@ -9,6 +9,7 @@
   let cardRenderToken = 0;
   let sentinelObserver = null;
   let photoDiagnostics = createEmptyPhotoDiagnostics();
+  let currentDetailId = null;
 
   document.addEventListener('DOMContentLoaded', init);
 
@@ -20,6 +21,7 @@
     setupFilters();
     await AppCurrency.init();
     render();
+    syncRouteFromHash();
     AppUI.updateMetaView();
 
     if (!window.isSecureContext) {
@@ -34,6 +36,14 @@
     AppUI.byId('saveButton').addEventListener('click', saveCatalog);
     AppUI.byId('exportButton').addEventListener('click', exportCatalog);
     AppUI.byId('clearButton').addEventListener('click', clearLocalData);
+
+    const inlineBackButton = AppUI.byId('inlineBackButton');
+    if (inlineBackButton) inlineBackButton.addEventListener('click', function () { showCatalogScreen(true); });
+
+    const inlineDeleteButton = AppUI.byId('inlineDeleteButton');
+    if (inlineDeleteButton) inlineDeleteButton.addEventListener('click', deleteCurrentInlineCoin);
+
+    window.addEventListener('hashchange', syncRouteFromHash);
 
     ['searchInput', 'countryFilter', 'statusFilter', 'materialFilter', 'conditionFilter', 'seriesFilter'].forEach(function (id) {
       const node = AppUI.byId(id);
@@ -50,8 +60,8 @@
       });
     });
 
-    document.addEventListener('currency-change', render);
-    document.addEventListener('currency-rates-loaded', render);
+    document.addEventListener('currency-change', function () { render(); refreshInlineDetail(); });
+    document.addEventListener('currency-rates-loaded', function () { render(); refreshInlineDetail(); });
   }
 
   async function openFolder() {
@@ -157,6 +167,95 @@
     renderCoins(filteredCoins);
     renderTotal(filteredCoins);
     AppUI.updateMetaView();
+  }
+
+  function parseCoinIdFromHash() {
+    const hash = window.location.hash || '';
+    const match = hash.match(/^#\/coin\/(.+)$/);
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function syncRouteFromHash() {
+    const id = parseCoinIdFromHash();
+    if (id) {
+      showInlineDetail(id, false);
+    } else {
+      showCatalogScreen(false);
+    }
+  }
+
+  function showCatalogScreen(updateHash) {
+    currentDetailId = null;
+    const catalogScreen = AppUI.byId('catalogScreen');
+    const detailScreen = AppUI.byId('inlineDetailScreen');
+    if (catalogScreen) catalogScreen.classList.remove('hidden');
+    if (detailScreen) detailScreen.classList.add('hidden');
+    document.title = 'Каталог монет';
+    if (updateHash && window.location.hash) {
+      history.pushState('', document.title, window.location.pathname + window.location.search);
+    }
+  }
+
+  function showInlineDetail(id, updateHash) {
+    catalog = CoinDB.loadCatalog();
+    const coin = catalog.coins.find(function (item) { return String(item.id) === String(id); });
+    if (!coin) {
+      AppUI.setStatus('Монета не найдена.', 'danger');
+      showCatalogScreen(Boolean(updateHash));
+      return;
+    }
+
+    currentDetailId = String(coin.id);
+    const catalogScreen = AppUI.byId('catalogScreen');
+    const detailScreen = AppUI.byId('inlineDetailScreen');
+    if (catalogScreen) catalogScreen.classList.add('hidden');
+    if (detailScreen) detailScreen.classList.remove('hidden');
+
+    const editButton = AppUI.byId('inlineEditButton');
+    if (editButton) editButton.href = 'form.html?id=' + encodeURIComponent(coin.id);
+
+    if (window.AppDetail && AppDetail.renderCoinInline) {
+      AppDetail.renderCoinInline(coin, catalog);
+    }
+
+    document.title = CoinDB.getDisplayTitle(coin) + ' · Каталог монет';
+    if (updateHash) {
+      window.location.hash = '/coin/' + encodeURIComponent(coin.id);
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function refreshInlineDetail() {
+    if (!currentDetailId) return;
+    const detailScreen = AppUI.byId('inlineDetailScreen');
+    if (!detailScreen || detailScreen.classList.contains('hidden')) return;
+    showInlineDetail(currentDetailId, false);
+  }
+
+  async function deleteCurrentInlineCoin() {
+    if (!currentDetailId) return;
+    const coin = CoinDB.loadCatalog().coins.find(function (item) { return String(item.id) === String(currentDetailId); });
+    if (!coin) return;
+
+    const confirmed = await AppUI.confirmDialog({
+      title: 'Удалить монету?',
+      message: 'Монета будет удалена из каталога. При сохранении будет автоматически создан backup, если открыт каталог как папка.',
+      confirmText: 'Удалить',
+      danger: true
+    });
+    if (!confirmed) return;
+
+    try {
+      const updatedCatalog = CoinDB.deleteCoin(coin.id);
+      const result = await AppUI.persistCatalogOrDownload(updatedCatalog);
+      catalog = updatedCatalog;
+      setupFilters();
+      render();
+      showCatalogScreen(true);
+      AppUI.setStatus(AppUI.formatSaveResultMessage(result, 'Монета удалена и файл сохранен.', 'Монета удалена. Обновленный JSON скачан.'), 'success');
+    } catch (error) {
+      AppUI.setStatus(error.message || 'Не удалось удалить монету.', 'danger');
+    }
   }
 
   function filterCoins(coins) {
@@ -412,15 +511,18 @@
 
   function createCoinCard(coin) {
     const link = AppUI.createElement('a', 'coin-card');
-    link.href = 'coin.html?id=' + encodeURIComponent(coin.id);
+    link.href = '#/coin/' + encodeURIComponent(coin.id);
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      showInlineDetail(coin.id, true);
+    });
 
-    const image = AppUI.createElement('div', 'coin-card__image-frame');
+    const image = AppUI.createElement('div', 'coin-card__image-frame coin-card__image-frame--obverse');
     image.dataset.role = 'coin-card-image';
     image.dataset.photoPath = coin.photos && coin.photos.obverse ? coin.photos.obverse : '';
     image.dataset.photoKind = 'obverse';
     image.dataset.photoAlt = 'Аверс: ' + CoinDB.getDisplayTitle(coin);
     image.dataset.imageToken = String(cardRenderToken);
-    image.style.backgroundImage = 'url("images/placeholder-obverse.svg")';
 
     const content = AppUI.createElement('div', 'coin-card__content');
     content.appendChild(AppUI.createElement('h2', 'coin-card__title', CoinDB.getDisplayTitle(coin)));
@@ -461,7 +563,7 @@
     coins.forEach(function (coin) {
       const row = document.createElement('tr');
       row.addEventListener('click', function () {
-        window.location.href = 'coin.html?id=' + encodeURIComponent(coin.id);
+        showInlineDetail(coin.id, true);
       });
       row.appendChild(AppUI.createElement('td', 'coin-table__title', CoinDB.getDisplayTitle(coin)));
       row.appendChild(AppUI.createElement('td', '', AppIssuers.getCoinIssuerName(coin) || '—'));

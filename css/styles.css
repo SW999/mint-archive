@@ -305,6 +305,14 @@ textarea.field {
   align-self: center;
 }
 
+.coin-card__image-frame--obverse {
+  background-image: url('../images/placeholder-obverse.svg');
+}
+
+.coin-card__image-frame--reverse {
+  background-image: url('../images/placeholder-reverse.svg');
+}
+
 .coin-card__image-frame.is-loading {
   opacity: 0.72;
 }
@@ -413,6 +421,30 @@ textarea.field {
   grid-template-columns: minmax(280px, 420px) 1fr;
   gap: 18px;
   align-items: start;
+}
+
+.inline-detail {
+  display: grid;
+  gap: 18px;
+}
+
+.inline-detail.hidden {
+  display: none !important;
+}
+
+.detail-actions--inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.detail-header--inline {
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .photo-panel {
