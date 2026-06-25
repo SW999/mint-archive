@@ -40,6 +40,9 @@
     const inlineBackButton = AppUI.byId('inlineBackButton');
     if (inlineBackButton) inlineBackButton.addEventListener('click', function () { showCatalogScreen(true); });
 
+    const inlineStatsBackButton = AppUI.byId('inlineStatsBackButton');
+    if (inlineStatsBackButton) inlineStatsBackButton.addEventListener('click', function () { showCatalogScreen(true); });
+
     const inlineDeleteButton = AppUI.byId('inlineDeleteButton');
     if (inlineDeleteButton) inlineDeleteButton.addEventListener('click', deleteCurrentInlineCoin);
 
@@ -184,6 +187,7 @@
     if (match) return { screen: 'edit', id: decodeURIComponent(match[1]) };
 
     if (hash === '#/new') return { screen: 'new', id: '' };
+    if (hash === '#/stats') return { screen: 'stats', id: '' };
     return { screen: 'list', id: '' };
   }
 
@@ -195,6 +199,8 @@
       showInlineForm(route.id, false);
     } else if (route.screen === 'new') {
       showInlineForm('', false);
+    } else if (route.screen === 'stats') {
+      showInlineStats(false);
     } else {
       showCatalogScreen(false);
     }
@@ -205,9 +211,11 @@
     const catalogScreen = AppUI.byId('catalogScreen');
     const detailScreen = AppUI.byId('inlineDetailScreen');
     const formScreen = AppUI.byId('inlineFormScreen');
+    const statsScreen = AppUI.byId('inlineStatsScreen');
     if (catalogScreen) catalogScreen.classList.remove('hidden');
     if (detailScreen) detailScreen.classList.add('hidden');
     if (formScreen) formScreen.classList.add('hidden');
+    if (statsScreen) statsScreen.classList.add('hidden');
     if (window.AppCoinForm && AppCoinForm.reset) AppCoinForm.reset();
     document.title = 'Каталог монет';
     if (updateHash && window.location.hash) {
@@ -228,9 +236,11 @@
     const catalogScreen = AppUI.byId('catalogScreen');
     const detailScreen = AppUI.byId('inlineDetailScreen');
     const formScreen = AppUI.byId('inlineFormScreen');
+    const statsScreen = AppUI.byId('inlineStatsScreen');
     if (catalogScreen) catalogScreen.classList.add('hidden');
     if (detailScreen) detailScreen.classList.remove('hidden');
     if (formScreen) formScreen.classList.add('hidden');
+    if (statsScreen) statsScreen.classList.add('hidden');
 
     const editButton = AppUI.byId('inlineEditButton');
     if (editButton) editButton.href = '#/edit/' + encodeURIComponent(coin.id);
@@ -250,9 +260,11 @@
     const catalogScreen = AppUI.byId('catalogScreen');
     const detailScreen = AppUI.byId('inlineDetailScreen');
     const formScreen = AppUI.byId('inlineFormScreen');
+    const statsScreen = AppUI.byId('inlineStatsScreen');
     if (catalogScreen) catalogScreen.classList.add('hidden');
     if (detailScreen) detailScreen.classList.add('hidden');
     if (formScreen) formScreen.classList.remove('hidden');
+    if (statsScreen) statsScreen.classList.add('hidden');
 
     if (window.AppCoinForm && AppCoinForm.openInline) {
       await AppCoinForm.openInline(id || '');
@@ -261,6 +273,30 @@
     document.title = (id ? 'Редактировать монету' : 'Добавить монету') + ' · Каталог монет';
     if (updateHash) {
       window.location.hash = id ? '/edit/' + encodeURIComponent(id) : '/new';
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  async function showInlineStats(updateHash) {
+    currentDetailId = null;
+    const catalogScreen = AppUI.byId('catalogScreen');
+    const detailScreen = AppUI.byId('inlineDetailScreen');
+    const formScreen = AppUI.byId('inlineFormScreen');
+    const statsScreen = AppUI.byId('inlineStatsScreen');
+
+    if (catalogScreen) catalogScreen.classList.add('hidden');
+    if (detailScreen) detailScreen.classList.add('hidden');
+    if (formScreen) formScreen.classList.add('hidden');
+    if (statsScreen) statsScreen.classList.remove('hidden');
+
+    if (window.AppCoinForm && AppCoinForm.reset) AppCoinForm.reset();
+    if (window.AppStats && AppStats.init) {
+      await AppStats.init();
+    }
+
+    document.title = 'Статистика · Каталог монет';
+    if (updateHash) {
+      window.location.hash = '/stats';
     }
     window.scrollTo({ top: 0, behavior: 'auto' });
   }

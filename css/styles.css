@@ -424,13 +424,15 @@ textarea.field {
 }
 
 .inline-detail,
-.inline-form {
+.inline-form,
+.inline-stats {
   display: grid;
   gap: 18px;
 }
 
 .inline-detail.hidden,
-.inline-form.hidden {
+.inline-form.hidden,
+.inline-stats.hidden {
   display: none !important;
 }
 

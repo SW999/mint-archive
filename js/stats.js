@@ -3,9 +3,20 @@
 
   let catalog = null;
 
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!AppUI.byId('catalogScreen') && AppUI.byId('statsTotalCoins')) {
+      init();
+    }
+  });
+
+  let initialized = false;
 
   async function init() {
+    if (initialized) {
+      render();
+      return;
+    }
+    initialized = true;
     await AppCurrency.init();
     if (window.AppIssuers) await AppIssuers.init();
 
@@ -15,6 +26,7 @@
 
     document.addEventListener('currency-change', render);
     document.addEventListener('currency-rates-loaded', render);
+    document.addEventListener('coin-catalog-updated', render);
   }
 
   function render() {
@@ -242,4 +254,9 @@
     const roman = String(label || '').split(' ')[0];
     return map[roman] || 999;
   }
+
+  window.AppStats = {
+    init: init,
+    render: render
+  };
 })();

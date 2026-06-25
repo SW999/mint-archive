@@ -34,7 +34,7 @@
           </label>
         </div>
         <nav class="actions" aria-label="Основные действия">
-          <a class="link-button" href="stats.html">Статистика</a>
+          <a class="link-button" href="#/stats">Статистика</a>
           <a class="link-button button--accent" href="#/new">Добавить монету</a>
         </nav>
       </div>
@@ -149,7 +149,7 @@
     <section id="inlineFormScreen" class="inline-form hidden" aria-label="Форма монеты">
       <div class="detail-actions detail-actions--inline">
         <button id="inlineFormBackButton" class="button" type="button">← В каталог</button>
-        <a class="link-button" href="stats.html">Статистика</a>
+        <a class="link-button" href="#/stats">Статистика</a>
         <button id="deleteButton" class="button button--danger hidden" type="button">Удалить</button>
       </div>
 
@@ -166,6 +166,68 @@
         </div>
       </form>
     </section>
+
+    <section id="inlineStatsScreen" class="inline-stats hidden" aria-label="Статистика коллекции">
+      <div class="detail-actions detail-actions--inline">
+        <button id="inlineStatsBackButton" class="button" type="button">← В каталог</button>
+        <a class="link-button button--accent" href="#/new">Добавить монету</a>
+      </div>
+
+      <header class="detail-header detail-header--inline">
+        <h2 class="detail-title">Статистика</h2>
+        <p id="statsSubtitle" class="brand__subtitle">Сводка по коллекции</p>
+      </header>
+
+      <section class="stats stats--wide" aria-label="Основные показатели">
+        <div class="stat-card">
+          <span id="statsTotalCoins" class="stat-card__value">0</span>
+          <span class="stat-card__label">Монет</span>
+        </div>
+        <div class="stat-card">
+          <span id="statsPurchaseTotal" class="stat-card__value">—</span>
+          <span class="stat-card__label">Сумма покупок</span>
+        </div>
+        <div class="stat-card">
+          <span id="statsMedianPrice" class="stat-card__value">—</span>
+          <span class="stat-card__label">Медианная цена</span>
+        </div>
+        <div class="stat-card">
+          <span id="statsIssuerCount" class="stat-card__value">0</span>
+          <span class="stat-card__label">Эмитентов</span>
+        </div>
+        <div class="stat-card">
+          <span id="statsSlabCount" class="stat-card__value">0</span>
+          <span class="stat-card__label">В слабах</span>
+        </div>
+      </section>
+
+      <section class="charts-grid" aria-label="Графики коллекции">
+        <article class="chart-card">
+          <h2 class="chart-card__title">Стоимость покупок по месяцам</h2>
+          <div id="monthlyPurchaseChart" class="bar-chart"></div>
+        </article>
+        <article class="chart-card">
+          <h2 class="chart-card__title">Распределение по эмитентам</h2>
+          <div id="issuerChart" class="bar-chart"></div>
+        </article>
+        <article class="chart-card">
+          <h2 class="chart-card__title">Распределение по материалам</h2>
+          <div id="materialChart" class="bar-chart"></div>
+        </article>
+        <article class="chart-card">
+          <h2 class="chart-card__title">Распределение по состоянию</h2>
+          <div id="conditionChart" class="bar-chart"></div>
+        </article>
+        <article class="chart-card">
+          <h2 class="chart-card__title">Количество монет по векам</h2>
+          <div id="centuryChart" class="bar-chart"></div>
+        </article>
+        <article class="chart-card">
+          <h2 class="chart-card__title">Количество монет по периодам</h2>
+          <div id="periodChart" class="bar-chart"></div>
+        </article>
+      </section>
+    </section>
   </main>
 
   <script src="js/db.js"></script>
@@ -177,6 +239,7 @@
   <script src="js/app.js"></script>
   <script src="js/detail.js"></script>
   <script src="js/form.js"></script>
+  <script src="js/stats.js"></script>
   <script src="js/list.js"></script>
 </body>
 </html>
