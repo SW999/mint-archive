@@ -8,7 +8,6 @@
   let renderedCardCount = 0;
   let cardRenderToken = 0;
   let sentinelObserver = null;
-  let photoDiagnostics = createEmptyPhotoDiagnostics();
   let currentDetailId = null;
 
   document.addEventListener('DOMContentLoaded', init);
@@ -419,9 +418,6 @@
     const container = AppUI.byId('coinList');
     cardRenderToken += 1;
     renderedCardCount = 0;
-    photoDiagnostics = createEmptyPhotoDiagnostics();
-    updatePhotoDiagnostics();
-
     if (sentinelObserver) {
       sentinelObserver.disconnect();
       sentinelObserver = null;
@@ -501,91 +497,8 @@
 
   async function loadCardImageBatch(frames, token) {
     if (!frames.length) return;
-
-    frames.forEach(function (frame) {
-      const path = frame.dataset.photoPath || '';
-      if (path) photoDiagnostics.requested += 1;
-      else photoDiagnostics.empty += 1;
-    });
-    updatePhotoDiagnostics();
-
-    const results = await AppUI.loadCoinImageFramesBatch(frames, { concurrency: 2 });
+    await AppUI.loadCoinImageFramesBatch(frames, { concurrency: 2 });
     if (token !== cardRenderToken) return;
-
-    results.forEach(function (result) {
-      if (!result || result.code === 'detached') return;
-      if (result.ok) {
-        photoDiagnostics.loaded += 1;
-        if (result.cached) photoDiagnostics.cached += 1;
-        if (result.persistent) photoDiagnostics.persistent += 1;
-        return;
-      }
-
-      if (result.code === 'empty-path') return;
-      photoDiagnostics.failed += 1;
-      photoDiagnostics.byCode[result.code] = (photoDiagnostics.byCode[result.code] || 0) + 1;
-      if (photoDiagnostics.samples.length < 10) {
-        photoDiagnostics.samples.push({ path: result.path || '', message: result.message || 'Ошибка загрузки' });
-      }
-    });
-
-    updatePhotoDiagnostics();
-  }
-
-  function createEmptyPhotoDiagnostics() {
-    return {
-      requested: 0,
-      loaded: 0,
-      failed: 0,
-      empty: 0,
-      cached: 0,
-      persistent: 0,
-      byCode: {},
-      samples: []
-    };
-  }
-
-  function updatePhotoDiagnostics() {
-    const panel = AppUI.byId('photoDiagnostics');
-    const summary = AppUI.byId('photoDiagnosticsSummary');
-    const details = AppUI.byId('photoDiagnosticsDetails');
-    if (!panel || !summary || !details) return;
-
-    const total = photoDiagnostics.requested;
-    const failed = photoDiagnostics.failed;
-    const loaded = photoDiagnostics.loaded;
-
-    panel.classList.toggle('hidden', total === 0 && photoDiagnostics.empty === 0);
-    summary.textContent = 'Фото: загружено ' + loaded + ' из ' + total + (failed ? ', ошибок: ' + failed : '');
-
-    const codeLabels = {
-      'missing-directory': 'папка не открыта',
-      'no-permission': 'нет доступа',
-      'not-found': 'файл не найден',
-      'read-error': 'ошибка чтения',
-      'decode-error': 'ошибка изображения',
-      'load-error': 'ошибка загрузки'
-    };
-
-    const parts = [];
-    Object.keys(photoDiagnostics.byCode).forEach(function (code) {
-      parts.push((codeLabels[code] || code) + ': ' + photoDiagnostics.byCode[code]);
-    });
-
-    if (photoDiagnostics.empty) parts.push('без пути к фото: ' + photoDiagnostics.empty);
-    if (photoDiagnostics.cached) parts.push('из cache: ' + photoDiagnostics.cached);
-    if (photoDiagnostics.persistent) parts.push('из хранилища приложения: ' + photoDiagnostics.persistent);
-
-    details.innerHTML = '';
-    details.appendChild(AppUI.createElement('p', 'small-note', parts.length ? parts.join(' · ') : 'Ошибок загрузки пока нет.'));
-
-    if (photoDiagnostics.samples.length) {
-      const list = AppUI.createElement('ul', 'photo-diagnostics__list');
-      photoDiagnostics.samples.forEach(function (item) {
-        list.appendChild(AppUI.createElement('li', '', item.message + ': ' + item.path));
-      });
-      details.appendChild(list);
-    }
   }
 
   function createCoinCard(coin) {

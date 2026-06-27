@@ -113,11 +113,17 @@ button {
   gap: 8px;
   font-weight: 650;
   white-space: nowrap;
+  transition: transform 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
 
 .button:hover,
 .link-button:hover {
   border-color: #cfc3af;
+}
+
+.button:active:not(:disabled),
+.link-button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .button--primary {
@@ -330,17 +336,6 @@ textarea.field {
   align-self: center;
 }
 
-.coin-card__image-error {
-  display: block;
-  max-width: 72px;
-  padding: 2px 4px;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.15;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 8px;
-}
 
 .coin-card__image.is-loading,
 .coin-photo.is-loading,
@@ -801,31 +796,9 @@ textarea.field {
   min-height: 4px;
 }
 
-.photo-diagnostics {
-  padding: 10px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
 
-.photo-diagnostics__summary {
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 13px;
-}
 
-.photo-diagnostics__details {
-  margin-top: 8px;
-}
 
-.photo-diagnostics__list {
-  margin: 8px 0 0;
-  padding-left: 18px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
 
 .total-summary {
   display: flex;
@@ -1106,11 +1079,6 @@ textarea.field {
     height: 72px;
   }
 
-  .coin-card__image-error {
-    max-width: 58px;
-    font-size: 9px;
-  }
-
   .filters,
   .filters--advanced,
   .stats,
@@ -1152,31 +1120,9 @@ textarea.field {
   min-height: 4px;
 }
 
-.photo-diagnostics {
-  padding: 10px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
 
-.photo-diagnostics__summary {
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 13px;
-}
 
-.photo-diagnostics__details {
-  margin-top: 8px;
-}
 
-.photo-diagnostics__list {
-  margin: 8px 0 0;
-  padding-left: 18px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
 
 .total-summary {
     justify-content: flex-start;

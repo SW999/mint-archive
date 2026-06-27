@@ -264,9 +264,8 @@
       if (frame.isConnected && frame.dataset.imageToken === token) {
         frame.classList.add('has-error');
         frame.dataset.photoError = normalized.message;
-        const label = createElement('span', 'coin-card__image-error', normalized.message);
+        frame.title = normalized.message;
         frame.textContent = '';
-        frame.appendChild(label);
       }
       return normalized;
     } finally {
