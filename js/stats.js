@@ -3,12 +3,6 @@
 
   let catalog = null;
 
-  document.addEventListener('DOMContentLoaded', function () {
-    if (!AppUI.byId('catalogScreen') && AppUI.byId('statsTotalCoins')) {
-      init();
-    }
-  });
-
   let initialized = false;
 
   async function init() {

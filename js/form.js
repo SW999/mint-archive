@@ -8,27 +8,17 @@
   let isSubmitting = false;
   let seriesList = [];
   let eventsBound = false;
-  let inlineMode = false;
 
   window.AppCoinForm = {
     openInline: openInlineForm,
     reset: resetFormState
   };
 
-  document.addEventListener('DOMContentLoaded', initIfStandalone);
-
-  async function initIfStandalone() {
-    if (!AppUI.byId('coinForm') || AppUI.byId('catalogScreen')) return;
-    const params = new URLSearchParams(window.location.search);
-    await setupForm(params.get('id'), { inline: false });
-  }
-
   async function openInlineForm(id) {
-    await setupForm(id, { inline: true });
+    await setupForm(id);
   }
 
-  async function setupForm(id, options) {
-    inlineMode = Boolean(options && options.inline);
+  async function setupForm(id) {
     isSubmitting = false;
     await AppCurrency.init();
     if (window.AppIssuers) await AppIssuers.init();
@@ -335,7 +325,7 @@
     const input = document.createElement('input');
     input.className = 'field';
     input.name = field;
-    input.value = value || '';
+    input.value = value || 'images/';
     input.placeholder = field === 'photos.obverse' ? 'images/coin_001_obverse.jpg' : 'images/coin_001_reverse.jpg';
     input.autocomplete = 'off';
     input.addEventListener('input', function () {
@@ -438,7 +428,8 @@
   function updatePreview(field, imageId, kind) {
     const input = document.querySelector('[name="' + field + '"]');
     const image = AppUI.byId(imageId);
-    AppUI.setCoinImage(image, input && input.value, kind, { lazy: false });
+    const value = input && String(input.value || '').trim();
+    AppUI.setCoinImage(image, value === 'images/' ? '' : value, kind, { lazy: false });
   }
 
   function getValue(coin, field) {
@@ -449,6 +440,8 @@
   }
 
   function normalizeFormValue(field, value) {
+    const text = String(value || '').trim();
+    if (field.indexOf('photos.') === 0 && text === 'images/') return '';
     return CoinDB.normalizeCoinField(field, value);
   }
 
@@ -592,11 +585,7 @@
 
       notifyCatalogUpdated({ coinId: coin.id, action: 'save' });
       window.setTimeout(function () {
-        if (inlineMode) {
-          window.location.hash = '/coin/' + encodeURIComponent(coin.id);
-        } else {
-          window.location.href = 'index.html#/coin/' + encodeURIComponent(coin.id);
-        }
+        window.location.hash = '/coin/' + encodeURIComponent(coin.id);
       }, 450);
     } catch (error) {
       isSubmitting = false;
@@ -627,11 +616,7 @@
 
       notifyCatalogUpdated({ coinId: originalCoin.id, action: 'delete' });
       window.setTimeout(function () {
-        if (inlineMode) {
-          window.location.hash = '';
-        } else {
-          window.location.href = 'index.html';
-        }
+        window.location.hash = '';
       }, 450);
     } catch (error) {
       isSubmitting = false;
