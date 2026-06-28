@@ -1,105 +1,11 @@
 (function () {
   'use strict';
 
-  let currentCoin = null;
   let catalog = null;
-
-  document.addEventListener('DOMContentLoaded', init);
-
-  async function init() {
-    if (!AppUI.byId('detailContent')) return;
-    await AppCurrency.init();
-    if (window.AppIssuers) await AppIssuers.init();
-
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    catalog = CoinDB.loadCatalog();
-    currentCoin = catalog.coins.find(function (coin) { return String(coin.id) === String(id); }) || null;
-
-    if (!currentCoin) {
-      renderMissingCoin();
-      return;
-    }
-
-    renderCoin(currentCoin);
-    bindEvents(currentCoin);
-    AppUI.updateMetaView();
-    document.addEventListener('currency-change', function () {
-      renderCoin(currentCoin);
-    });
-    document.addEventListener('currency-rates-loaded', function () {
-      renderCoin(currentCoin);
-    });
-  }
-
-  function bindEvents(coin) {
-    const editButton = AppUI.byId('editButton');
-    if (editButton) editButton.href = 'index.html#/edit/' + encodeURIComponent(coin.id);
-
-    const deleteButton = AppUI.byId('deleteButton');
-    if (deleteButton) {
-      deleteButton.addEventListener('click', async function () {
-        const confirmed = await AppUI.confirmDialog({
-          title: 'Удалить монету?',
-          message: 'Монета будет удалена из каталога. При сохранении будет автоматически создан backup, если открыт каталог как папка.',
-          confirmText: 'Удалить',
-          danger: true
-        });
-        if (!confirmed) return;
-
-        try {
-          const catalog = CoinDB.deleteCoin(coin.id);
-          const result = await AppUI.persistCatalogOrDownload(catalog);
-          AppUI.setStatus(AppUI.formatSaveResultMessage(result, 'Монета удалена и файл сохранен.', 'Монета удалена. Обновленный JSON скачан.'), 'success');
-          window.setTimeout(function () {
-            window.location.href = 'index.html';
-          }, 500);
-        } catch (error) {
-          AppUI.setStatus(error.message || 'Не удалось удалить монету.', 'danger');
-        }
-      });
-    }
-  }
-
-  function renderMissingCoin() {
-    AppUI.setText(AppUI.byId('detailTitle'), 'Монета не найдена');
-    AppUI.setText(AppUI.byId('detailSubtitle'), 'Проверь id в адресной строке или вернись в каталог.');
-    const content = AppUI.byId('detailContent');
-    if (content) {
-      content.innerHTML = '<div class="empty-state">Нет данных для отображения.</div>';
-    }
-  }
-
-  function renderCoin(coin) {
-    document.title = CoinDB.getDisplayTitle(coin) + ' · Каталог монет';
-    AppUI.setText(AppUI.byId('detailTitle'), CoinDB.getDisplayTitle(coin));
-    AppUI.setText(AppUI.byId('detailSubtitle'), CoinDB.compactText([AppIssuers.getCoinIssuerName(coin), coin.year, coin.mint]));
-
-    AppUI.setCoinImage(AppUI.byId('obverseImage'), coin.photos && coin.photos.obverse, 'obverse', { lazy: false });
-    AppUI.setCoinImage(AppUI.byId('reverseImage'), coin.photos && coin.photos.reverse, 'reverse', { lazy: false });
-
-    const chips = AppUI.byId('detailChips');
-    chips.innerHTML = '';
-    if (CoinDB.isSold(coin)) {
-      chips.appendChild(AppUI.createChip(AppUI.getStatusLabel(coin.status), 'danger'));
-    } else {
-      chips.appendChild(AppUI.createChip(AppUI.getStatusLabel(coin.status), 'success'));
-    }
-    if (coin.condition) chips.appendChild(AppUI.createChip(coin.condition, 'accent'));
-    if (coin.material) chips.appendChild(AppUI.createChip(coin.material));
-    if (coin.currentValue) chips.appendChild(AppUI.createChip('Оценка: ' + AppCurrency.formatPrice(coin.currentValue)));
-    CoinDB.getSeriesByIds(catalog.series, coin.seriesIds).forEach(function (series) {
-      chips.appendChild(AppUI.createChip(series.name));
-    });
-
-    renderSectionsTo(AppUI.byId('detailContent'), coin);
-  }
 
   function renderCoinInline(coin, activeCatalog) {
     if (!coin) return;
     catalog = activeCatalog || CoinDB.loadCatalog();
-    currentCoin = coin;
-
     AppUI.setText(AppUI.byId('inlineDetailTitle'), CoinDB.getDisplayTitle(coin));
     AppUI.setText(AppUI.byId('inlineDetailSubtitle'), CoinDB.compactText([AppIssuers.getCoinIssuerName(coin), coin.year, coin.mint]));
 

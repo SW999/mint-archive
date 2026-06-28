@@ -1,10 +1,7 @@
-const CACHE_NAME = 'coins-pwa-v21';
+const CACHE_NAME = 'coins-pwa-v22';
 const APP_SHELL = [
   './',
   './index.html',
-  './coin.html',
-  './form.html',
-  './stats.html',
   './manifest.json',
   './data/issuers.json',
   './css/styles.css',
@@ -56,7 +53,39 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  if (request.mode === 'navigate') {
+    const legacyTarget = getLegacyRouteRedirect(url);
+    if (legacyTarget) {
+      event.respondWith(Response.redirect(legacyTarget, 302));
+      return;
+    }
+
+    event.respondWith(
+      caches.match('./index.html').then(cached => cached || fetch('./index.html'))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then(cached => cached || fetch(request))
   );
 });
+
+function getLegacyRouteRedirect(url) {
+  const path = url.pathname;
+  if (path.endsWith('/coin.html')) {
+    const id = url.searchParams.get('id');
+    return new URL(id ? './index.html#/coin/' + encodeURIComponent(id) : './index.html#/list', url).toString();
+  }
+
+  if (path.endsWith('/form.html')) {
+    const id = url.searchParams.get('id');
+    return new URL(id ? './index.html#/edit/' + encodeURIComponent(id) : './index.html#/new', url).toString();
+  }
+
+  if (path.endsWith('/stats.html')) {
+    return new URL('./index.html#/stats', url).toString();
+  }
+
+  return '';
+}
