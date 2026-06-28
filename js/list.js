@@ -35,6 +35,8 @@
     AppUI.byId('saveButton').addEventListener('click', saveCatalog);
     AppUI.byId('exportButton').addEventListener('click', exportCatalog);
     AppUI.byId('clearButton').addEventListener('click', clearLocalData);
+    const clearImageCacheButton = AppUI.byId('clearImageCacheButton');
+    if (clearImageCacheButton) clearImageCacheButton.addEventListener('click', clearImageCache);
 
     const inlineBackButton = AppUI.byId('inlineBackButton');
     if (inlineBackButton) inlineBackButton.addEventListener('click', function () { showCatalogScreen(true); });
@@ -138,6 +140,25 @@
     AppUI.setStatus('Экспортирован текущий coins.json.', 'success');
   }
 
+
+  async function clearImageCache() {
+    const confirmed = await AppUI.confirmDialog({
+      title: 'Очистить кэш фото?',
+      message: 'Будут удалены только копии фото, сохраненные во внутреннем хранилище приложения. Файл coins.json и папка с оригинальными фото не изменятся.',
+      confirmText: 'Очистить кэш',
+      danger: true
+    });
+    if (!confirmed) return;
+
+    try {
+      await AppFileSystem.clearStoredImageCache();
+      render();
+      refreshInlineDetail();
+      AppUI.setStatus('Кэш фото очищен. Фото будут заново закрепляться после успешного чтения из папки.', 'success');
+    } catch (error) {
+      AppUI.setStatus(error.message || 'Не удалось очистить кэш фото.', 'danger');
+    }
+  }
 
   async function clearLocalData() {
     const confirmed = await AppUI.confirmDialog({

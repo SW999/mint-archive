@@ -7,7 +7,7 @@
   const FILE_HANDLE_KEY = 'catalogFile';
   const DIRECTORY_HANDLE_KEY = 'catalogDirectory';
   const IMAGE_OBJECT_URL_CACHE_LIMIT = 120;
-  const PERSISTENT_IMAGE_CACHE_LIMIT = 80;
+  const PERSISTENT_IMAGE_CACHE_LIMIT = 150;
   const imageObjectUrlCache = new Map();
   const imageObjectUrlPromises = new Map();
   const BACKUP_LIMIT = 5;
@@ -77,6 +77,23 @@
     await new Promise(function (resolve, reject) {
       const tx = db.transaction([STORE_NAME, IMAGE_STORE_NAME], 'readwrite');
       tx.objectStore(STORE_NAME).clear();
+      tx.objectStore(IMAGE_STORE_NAME).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = function () { reject(tx.error); };
+    });
+    db.close();
+    revokeImageObjectUrls();
+  }
+
+  async function clearStoredImageCache() {
+    if (!window.indexedDB) {
+      revokeImageObjectUrls();
+      return;
+    }
+
+    const db = await openHandleDB();
+    await new Promise(function (resolve, reject) {
+      const tx = db.transaction(IMAGE_STORE_NAME, 'readwrite');
       tx.objectStore(IMAGE_STORE_NAME).clear();
       tx.oncomplete = resolve;
       tx.onerror = function () { reject(tx.error); };
@@ -559,6 +576,7 @@
     revokeImageObjectUrls: revokeImageObjectUrls,
     loadPlainFileInput: loadPlainFileInput,
     clearStoredHandles: clearStoredHandles,
+    clearStoredImageCache: clearStoredImageCache,
     timestamp: timestamp,
     backupLimit: BACKUP_LIMIT,
     persistentImageCacheLimit: PERSISTENT_IMAGE_CACHE_LIMIT
